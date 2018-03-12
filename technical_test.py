@@ -39,11 +39,14 @@ class GMMA:
         return (ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60)
 
     def plot_chart_tillnow_to_csv(self, num=100, periods="1m"):
-        (time_stamp, open_price, high_price, low_price, close_price) = self.btc_charts.get_price_array_till_finaltime(
-            num=num, periods=periods, converter=False)
-        (ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60) = self.get_GMMA(close_price)
-
-        ema = np.c_[ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60]
+        while 1:
+            try:
+                (time_stamp, open_price, high_price, low_price, close_price) = self.btc_charts.get_price_array_till_finaltime(num=num, periods=periods, converter=False)
+                (ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60) = self.get_GMMA(close_price)
+                ema = np.c_[ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60]
+                break
+            except Exception:
+                continue
 
         plot_all = np.c_[
             time_stamp, open_price.astype(int), high_price.astype(int), low_price.astype(int), close_price.astype(int)]
@@ -72,22 +75,25 @@ class GMMA:
 
     def simulate(self,num=100, periods="1m"):
         (time_stamp, open_price, high_price, low_price, close_price) = self.btc_charts.get_price_array_till_finaltime(
-            num=num, periods=periods, converter=False)
+            num=num, periods=periods, converter=True)
         (ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60) = self.get_GMMA(close_price)
         all = np.c_[
             time_stamp, open_price, high_price, low_price, close_price, ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60]
 
         gradient=np.zeros([len(all),12])
         print(gradient)
+
+        #compute gradient for 12 EMA lines respectively.
         for t in range(61, len(all)):
             for i in range(5,17):
                 gradient[t][i-5]= (all[t][i]-all[t-1][i])/ float(self.btc_charts.period_converter(periods))
                 # print("grad=",gradient[t][i])
 
-                w_short=np.matrix([0.2,0.2,0.2,0.2,0.1,0.1, 0., 0., 0., 0., 0., 0.])
-                w_long=np.matrix([ 0., 0., 0., 0., 0., 0., 0.2,0.2,0.2,0.2,0.1,0.1])
 
+        # compute weighted composite gradients for both 6 long and 6 short EMA lines, respectively.
         grad_w=np.zeros([len(all),2])
+        w_short = np.matrix([0.2, 0.2, 0.2, 0.2, 0.1, 0.1, 0., 0., 0., 0., 0., 0.])
+        w_long = np.matrix([0., 0., 0., 0., 0., 0., 0.2, 0.2, 0.2, 0.2, 0.1, 0.1])
 
         for t in range(len(gradient)):
                 grad_w[t][0]=w_short*gradient[t].reshape(12,1)
@@ -97,9 +103,42 @@ class GMMA:
 
         all = np.c_[
             time_stamp, open_price, high_price, low_price, close_price, ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60,grad_w]
+
+
+        print(len(all))
+
+        amount = np.zeros([len(all), 3])
+        hold = False
+        cash = 1000000.
+        btc = 0.
+        value=cash
+        for i in range(61, len(all)):
+            if hold == False:
+                if all[i][17] > 0.1 and all[i][17] < 0.3 and all[i][18] > 0.0 and np.abs(all[i][10]-all[i][11])<10000:
+                    hold = True
+                    btc = cash / all[i][4]
+                    cash = 0.
+            elif hold == True:
+                if all[i][17] < -0.05:
+                    hold = False
+                    cash = all[i][4] * btc
+                    btc = 0.
+            value=cash+all[i][4]*btc
+            amount[i][0] = cash
+            amount[i][1] = btc
+            amount[i][2] =value
+            print("cash: %s" %cash)
+            print("btc: %s" %btc)
+
+        all = np.c_[
+            time_stamp, open_price, high_price, low_price, close_price, ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60, grad_w,amount]
+
         data = pd.DataFrame(all,
                             columns={"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15",
-                                     "16", "17","18", "19"})
+                                     "16", "17", "18", "19","20","21","22"})
+
+
+
 
         cwd = os.getcwd()
         data.to_csv(
@@ -119,4 +158,4 @@ if __name__ == '__main__':
 
     gmma = GMMA()
     # gmma.save_chart_tillnow_to_csv(num=1000, periods="1H")
-    gmma.simulate(num=200, periods="1H")
+    gmma.simulate(num=6*7*14+61, periods="4H")
