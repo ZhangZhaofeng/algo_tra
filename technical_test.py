@@ -83,9 +83,21 @@ class GMMA:
         delta=1000;
         for i in range(0,1000):
             (gradient, grad_w)=self.get_current_GMMA_gradient_realtime(last_ema_all,price,periods)
-            if grad_w[0]<-0.3:
+            if grad_w[0]<-0.2:
                 break
             price-=delta
+
+        return price
+
+    def get_buyprice(self, last_ema_all, current_open, periods):
+        price=current_open
+
+        delta=1000;
+        for i in range(0,1000):
+            (gradient, grad_w)=self.get_current_GMMA_gradient_realtime(last_ema_all,price,periods)
+            if grad_w[0]>0.2:
+                break
+            price+=delta
 
         return price
 
@@ -110,6 +122,18 @@ class GMMA:
             grad_w[t][1] = w_long * gradient[t].reshape(12, 1)
 
         return grad_w
+
+    def get_GMMA_divergence_ratio(self, ema):
+        short_term_gmma, long_term_gmma = np.hsplit(ema, [6])
+        divergence_ratio = np.zeros([len(ema), 2])
+        for t in range(61, len(ema)):
+            divergence_ratio[t][0] = max(short_term_gmma[t]) / min(short_term_gmma[t])
+            divergence_ratio[t][1] = max(long_term_gmma[t]) / min(long_term_gmma[t])
+
+        return divergence_ratio
+
+
+
 
     def plot_chart_tillnow_to_csv(self, num=100, periods="1m"):
         while 1:
@@ -150,10 +174,9 @@ class GMMA:
         (time_stamp, open_price, high_price, low_price, close_price) = self.btc_charts.get_price_array_till_finaltime(
             final_unixtime_stamp=time.time()-3600, num=num, periods=periods, converter=True)
         (ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60) = self.get_GMMA(close_price)
-        all = np.c_[
-            time_stamp, open_price, high_price, low_price, close_price]
-
         ema=np.c_[ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60]
+        div_ratio=self.get_GMMA_divergence_ratio(ema)
+
         grad_w=self.get_GMMA_gradient(ema, periods)
 
         all = np.c_[
@@ -161,7 +184,7 @@ class GMMA:
 
         print(len(all))
 
-        amount = np.zeros([len(all), 4])
+        amount = np.zeros([len(all), 5])
         hold = False
         cash = 10000.
         btc = 0.
@@ -171,17 +194,16 @@ class GMMA:
         for t in range(62, len(all)):
             # (gradient_real, grad_w_real)=self.get_current_GMMA_gradient_realtime(ema[t-1], all[t][2], periods)
             sell_price=self.get_sellprice(ema[t-1],all[t][1],periods)
-            print("open_price=%s", all[t][1])
-            print("sell_price=%s",sell_price)
+            buy_price = self.get_buyprice(ema[t - 1], all[t][1], periods)
             if hold == False:
-                if all[t][17] > 0.1 and all[t][17] < 1.3 and all[t][18] > 0.0 :
+                # if all[t][17] > 0.1 and all[t][17] < 1.3 and all[t][18] > 0.0 and div_ratio[t][0]<1.05 :
+                if all[t][2] > buy_price :#and #all[t-1][18] > 0.0:  #high price is higher than buy_price
                     hold = True
-                    btc = cash / all[t][4]
+                    btc = cash / buy_price
                     cash = 0.
                     buy_times +=1
             elif hold == True:
                 assert(all[t][1]>=sell_price)
-                assert (all[t][3] <= all[t][4])
                 # if all[t][4]<all[t-1][10]:   #low price is lower than last ema8
                 #     hold = False
                 #     cash = all[t-1][7] * btc
@@ -194,10 +216,11 @@ class GMMA:
                     sell_times +=1
 
             value=cash+all[t][4]*btc
-            amount[t][0] = cash
-            amount[t][1] = btc
-            amount[t][2] =value
-            amount[t][3] = sell_price
+            amount[t][0] = buy_price
+            amount[t][1] = sell_price
+            amount[t][2] = cash
+            amount[t][3] = btc
+            amount[t][4] =value
             print("value: %s" %value)
 
         all = np.c_[
@@ -205,7 +228,7 @@ class GMMA:
 
         data = pd.DataFrame(all,
                             columns={"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15",
-                                     "16", "17", "18", "19","20","21","22","23"})
+                                     "16", "17", "18", "19","20","21","22","23","24"})
 
         print("============================")
         print(buy_times)
@@ -228,4 +251,4 @@ if __name__ == '__main__':
 
     gmma = GMMA()
     # gmma.save_chart_tillnow_to_csv(num=1000, periods="1H")
-    gmma.simulate(num=24*7*14+61, periods="1H")
+    gmma.simulate(num=24*7*30+61, periods="1H")
