@@ -83,13 +83,11 @@ class GMMA:
         delta=1000;
         for i in range(0,1000):
             (gradient, grad_w)=self.get_current_GMMA_gradient_realtime(last_ema_all,price,periods)
-            if grad_w[0]<-0.01:
+            if grad_w[0]<-0.3:
                 break
             price-=delta
 
         return price
-
-
 
     def get_GMMA_gradient(self, ema, periods):
         assert(len(ema)>61)
@@ -112,8 +110,6 @@ class GMMA:
             grad_w[t][1] = w_long * gradient[t].reshape(12, 1)
 
         return grad_w
-
-
 
     def plot_chart_tillnow_to_csv(self, num=100, periods="1m"):
         while 1:
@@ -232,4 +228,4 @@ if __name__ == '__main__':
 
     gmma = GMMA()
     # gmma.save_chart_tillnow_to_csv(num=1000, periods="1H")
-    gmma.simulate(num=24*7*1000+61, periods="1H")
+    gmma.simulate(num=24*7*14+61, periods="1H")
