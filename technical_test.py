@@ -7,9 +7,10 @@ import numpy as np
 import historical
 import os
 import pandas as pd
-import plot_chart as plc
-import matplotlib.pyplot as plt
-from matplotlib.finance import candlestick_ohlc as plot_candle
+#import plot_chart as plc
+#import matplotlib.pyplot as plt
+#from matplotlib.finance import candlestick_ohlc as plot_candle
+import time
 
 
 class GMMA:
@@ -22,7 +23,7 @@ class GMMA:
         # print(x)
         return x.T
 
-    def get_GMMA(self,price):
+    def get_GMMA(self,price): #price=1*N (N>61)
         ema3 = self.EMA(price, 3)
         ema5 = self.EMA(price, 5)
         ema8 = self.EMA(price, 8)
@@ -38,24 +39,120 @@ class GMMA:
 
         return (ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60)
 
-    def plot_chart_tillnow_to_csv(self, num=100, periods="1m"):
-        while 1:
-            try:
-                (time_stamp, open_price, high_price, low_price, close_price) = self.btc_charts.get_price_array_till_finaltime(num=num, periods=periods, converter=False)
-                (ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60) = self.get_GMMA(close_price)
-                ema = np.c_[ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60]
+    def get_current_ema_realtime(self, last_ema, current_price, N):
+        return current_price*2/(N+1)+last_ema*(N-1)/(N+1)
+
+
+    def get_current_GMMA_realtime(self,last_ema_all, current_price): #price=1*N (N>61)
+        ema3 = self.get_current_ema_realtime(last_ema_all[0],current_price,3)
+        ema5 = self.get_current_ema_realtime(last_ema_all[1],current_price,5)
+        ema8 = self.get_current_ema_realtime(last_ema_all[2],current_price,8)
+        ema10 = self.get_current_ema_realtime(last_ema_all[3],current_price,10)
+        ema12 = self.get_current_ema_realtime(last_ema_all[4],current_price,12)
+        ema15 = self.get_current_ema_realtime(last_ema_all[5],current_price,15)
+        ema30 = self.get_current_ema_realtime(last_ema_all[6],current_price,30)
+        ema35 = self.get_current_ema_realtime(last_ema_all[7],current_price,35)
+        ema40 = self.get_current_ema_realtime(last_ema_all[8],current_price,40)
+        ema45 = self.get_current_ema_realtime(last_ema_all[9],current_price,45)
+        ema50 = self.get_current_ema_realtime(last_ema_all[10],current_price,50)
+        ema60 = self.get_current_ema_realtime(last_ema_all[11],current_price,60)
+
+        return np.c_[ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60]
+
+    def get_current_GMMA_gradient_realtime(self, last_ema_all, current_price, periods):
+        current_ema_all = self.get_current_GMMA_realtime(last_ema_all, current_price)
+        gradient = np.zeros([1, 12])
+
+        # print(current_ema_all)
+
+        for i in range(0, 12):
+            gradient[0][i] = (current_ema_all[0][i] - last_ema_all[i]) / float(self.btc_charts.period_converter(periods))
+
+        grad_w = np.zeros(12)
+        w_short = np.matrix([0.1, 0.1, 0.1, 0.2, 0.2, 0.3, 0., 0., 0., 0., 0., 0.])
+        w_long = np.matrix([0., 0., 0., 0., 0., 0., 0.2, 0.2, 0.2, 0.2, 0.1, 0.1])
+
+        grad_w[0] = w_short * gradient[0].reshape(12, 1)
+        grad_w[1] = w_long * gradient[0].reshape(12, 1)
+
+        return (gradient, grad_w)
+
+    def get_sellprice(self, last_ema_all, current_open, periods):
+        price=current_open
+
+        delta=1000;
+        for i in range(0,1000):
+            (gradient, grad_w)=self.get_current_GMMA_gradient_realtime(last_ema_all,price,periods)
+            if grad_w[0]<-0.2:
                 break
-            except Exception:
-                continue
+            price-=delta
 
-        plot_all = np.c_[
-            time_stamp, open_price.astype(int), high_price.astype(int), low_price.astype(int), close_price.astype(int)]
-        print(ema)
+        return price
 
-        figure, ax = plt.subplots()
-        plot_candle(ax, plot_all, width=0.4, colorup='#77d879', colordown='#db3f3f')
-        plt.plot(time_stamp, ema)
-        plt.show()
+    def get_buyprice(self, last_ema_all, current_open, periods):
+        price=current_open
+
+        delta=1000;
+        for i in range(0,1000):
+            (gradient, grad_w)=self.get_current_GMMA_gradient_realtime(last_ema_all,price,periods)
+            if grad_w[0]>0.2:
+                break
+            price+=delta
+
+        return price
+
+    def get_GMMA_gradient(self, ema, periods):
+        assert(len(ema)>61)
+        gradient = np.zeros([len(ema), 12])
+        print(gradient)
+
+        # compute gradient for 12 EMA lines respectively.
+        for t in range(61, len(ema)):
+            for i in range(0, 12):
+                gradient[t][i] = (ema[t][i] - ema[t - 1][i]) / float(self.btc_charts.period_converter(periods))
+                # print("grad=",gradient[t][i])
+
+        # compute weighted composite gradients for both 6 long and 6 short EMA lines, respectively.
+        grad_w = np.zeros([len(ema), 2])
+        w_short = np.matrix([0.1, 0.1, 0.1, 0.2, 0.2, 0.3, 0., 0., 0., 0., 0., 0.])
+        w_long = np.matrix([0., 0., 0., 0., 0., 0., 0.2, 0.2, 0.2, 0.2, 0.1, 0.1])
+
+        for t in range(len(gradient)):
+            grad_w[t][0] = w_short * gradient[t].reshape(12, 1)
+            grad_w[t][1] = w_long * gradient[t].reshape(12, 1)
+
+        return grad_w
+
+    def get_GMMA_divergence_ratio(self, ema):
+        short_term_gmma, long_term_gmma = np.hsplit(ema, [6])
+        divergence_ratio = np.zeros([len(ema), 2])
+        for t in range(61, len(ema)):
+            divergence_ratio[t][0] = max(short_term_gmma[t]) / min(short_term_gmma[t])
+            divergence_ratio[t][1] = max(long_term_gmma[t]) / min(long_term_gmma[t])
+
+        return divergence_ratio
+
+
+
+
+    # def plot_chart_tillnow_to_csv(self, num=100, periods="1m"):
+    #     while 1:
+    #         try:
+    #             (time_stamp, open_price, high_price, low_price, close_price) = self.btc_charts.get_price_array_till_finaltime(num=num, periods=periods, converter=False)
+    #             (ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60) = self.get_GMMA(close_price)
+    #             ema = np.c_[ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60]
+    #             break
+    #         except Exception:
+    #             continue
+    #
+    #     plot_all = np.c_[
+    #         time_stamp, open_price.astype(int), high_price.astype(int), low_price.astype(int), close_price.astype(int)]
+    #     print(ema)
+    #
+    #     figure, ax = plt.subplots()
+    #     plot_candle(ax, plot_all, width=0.4, colorup='#77d879', colordown='#db3f3f')
+    #     plt.plot(time_stamp, ema)
+    #     plt.show()
 
     def save_chart_tillnow_to_csv(self, num=100, periods="1m"):
         (time_stamp, open_price, high_price, low_price, close_price) = self.btc_charts.get_price_array_till_finaltime(
@@ -66,85 +163,82 @@ class GMMA:
                             columns={"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15",
                                      "16", "17"})
 
-        print(all)
-        print("all")
+        #print(all)
+        #print("all")
         cwd = os.getcwd()
         data.to_csv(
             cwd + ".csv",
             index=True)
 
-    def simulate(self,num=100, periods="1m"):
+    def simulate(self,num=64, periods="1m"):
         (time_stamp, open_price, high_price, low_price, close_price) = self.btc_charts.get_price_array_till_finaltime(
-            num=num, periods=periods, converter=True)
+            final_unixtime_stamp=time.time()-3600, num=num, periods=periods, converter=True)
         (ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60) = self.get_GMMA(close_price)
-        all = np.c_[
-            time_stamp, open_price, high_price, low_price, close_price, ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60]
+        ema=np.c_[ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60]
+        div_ratio=self.get_GMMA_divergence_ratio(ema)
 
-        gradient=np.zeros([len(all),12])
-        print(gradient)
-
-        #compute gradient for 12 EMA lines respectively.
-        for t in range(61, len(all)):
-            for i in range(5,17):
-                gradient[t][i-5]= (all[t][i]-all[t-1][i])/ float(self.btc_charts.period_converter(periods))
-                # print("grad=",gradient[t][i])
-
-
-        # compute weighted composite gradients for both 6 long and 6 short EMA lines, respectively.
-        grad_w=np.zeros([len(all),2])
-        w_short = np.matrix([0.2, 0.2, 0.2, 0.2, 0.1, 0.1, 0., 0., 0., 0., 0., 0.])
-        w_long = np.matrix([0., 0., 0., 0., 0., 0., 0.2, 0.2, 0.2, 0.2, 0.1, 0.1])
-
-        for t in range(len(gradient)):
-                grad_w[t][0]=w_short*gradient[t].reshape(12,1)
-                grad_w[t][1] = w_long * gradient[t].reshape(12,1)
-
-        print(grad_w)
+        grad_w=self.get_GMMA_gradient(ema, periods)
 
         all = np.c_[
-            time_stamp, open_price, high_price, low_price, close_price, ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60,grad_w]
-
+            time_stamp, open_price, high_price, low_price, close_price, ema,grad_w]
 
         print(len(all))
 
-        amount = np.zeros([len(all), 3])
+        amount = np.zeros([len(all), 5])
         hold = False
-        cash = 1000000.
+        cash = 10000.
         btc = 0.
         value=cash
-        for i in range(61, len(all)):
+        buy_times=0
+        sell_times=0
+        for t in range(62, len(all)):
+            # (gradient_real, grad_w_real)=self.get_current_GMMA_gradient_realtime(ema[t-1], all[t][2], periods)
+            sell_price = self.get_sellprice(ema[t - 1], all[t][1], periods)
+            buy_price = self.get_buyprice(ema[t - 1], all[t][1], periods)
             if hold == False:
-                if all[i][17] > 0.1 and all[i][17] < 0.3 and all[i][18] > 0.0 and np.abs(all[i][10]-all[i][11])<10000:
+                # if all[t][17] > 0.1 and all[t][17] < 1.3 and all[t][18] > 0.0 and div_ratio[t][0]<1.05 :
+                if all[t][2] > buy_price :#and #all[t-1][18] > 0.0:  #high price is higher than buy_price
                     hold = True
-                    btc = cash / all[i][4]
+                    btc = cash / buy_price
                     cash = 0.
+                    buy_times +=1
             elif hold == True:
-                if all[i][17] < -0.05:
+                assert(all[t][1]>=sell_price)
+                # if all[t][4]<all[t-1][10]:   #low price is lower than last ema8
+                #     hold = False
+                #     cash = all[t-1][7] * btc
+                #     btc = 0.
+                #     sell_times +=1
+                if all[t][3]<sell_price:   #low price is lower than sell_price
                     hold = False
-                    cash = all[i][4] * btc
+                    cash = sell_price * btc
                     btc = 0.
-            value=cash+all[i][4]*btc
-            amount[i][0] = cash
-            amount[i][1] = btc
-            amount[i][2] =value
-            print("cash: %s" %cash)
-            print("btc: %s" %btc)
+                    sell_times +=1
+
+            value=cash+all[t][4]*btc
+            amount[t][0] = buy_price
+            amount[t][1] = sell_price
+            amount[t][2] = cash
+            amount[t][3] = btc
+            amount[t][4] =value
+            print("value: %s" %value)
+            print('sell price: %.0f buy price:%.0f'%(sell_price, buy_price))
 
         all = np.c_[
             time_stamp, open_price, high_price, low_price, close_price, ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60, grad_w,amount]
 
         data = pd.DataFrame(all,
                             columns={"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15",
-                                     "16", "17", "18", "19","20","21","22"})
+                                     "16", "17", "18", "19","20","21","22","23","24"})
 
-
-
+        print("============================")
+        print(buy_times)
+        print(sell_times)
 
         cwd = os.getcwd()
         data.to_csv(
             cwd + ".csv",
             index=True)
-
 
 
 if __name__ == '__main__':
@@ -158,4 +252,4 @@ if __name__ == '__main__':
 
     gmma = GMMA()
     # gmma.save_chart_tillnow_to_csv(num=1000, periods="1H")
-    gmma.simulate(num=6*7*14+61, periods="4H")
+    gmma.simulate(num=61+4*12, periods="15m")
