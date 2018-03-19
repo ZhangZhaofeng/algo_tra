@@ -31,6 +31,7 @@ class Quoine(object):
     ORDER_TYPE_LIMIT = 'limit'
     ORDER_TYPE_MARKET = 'market'
     ORDER_TYPE_MARKET_RANGE = 'market_with_range'
+    ORDER_TYPE_STOP = 'stop'
 
     LEVERAGE_LEVEL_2 = 2
     LEVERAGE_LEVEL_4 = 4
@@ -510,6 +511,8 @@ class Quoine(object):
             data['order']['price'] = price
         if price_range and order_type == self.ORDER_TYPE_MARKET_RANGE:
             data['order']['price_range'] = price_range
+        if price and order_type == self.ORDER_TYPE_STOP:
+            data['order']['price'] = price
         return self._post('orders', True, json=data)
 
     def create_limit_buy(self, product_id, quantity, price):
