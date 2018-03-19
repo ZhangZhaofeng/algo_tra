@@ -133,8 +133,6 @@ class GMMA:
         return divergence_ratio
 
 
-
-
     def plot_chart_tillnow_to_csv(self, num=100, periods="1m"):
         while 1:
             try:
@@ -154,14 +152,12 @@ class GMMA:
         plt.plot(time_stamp, ema)
         plt.show()
 
-    def save_chart_tillnow_to_csv(self, num=100, periods="1m"):
+    def save_chart_tillnow_to_csv(self, num=62, periods="1m"):
         (time_stamp, open_price, high_price, low_price, close_price) = self.btc_charts.get_price_array_till_finaltime(
             num=num, periods=periods, converter=False)
         (ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60) = self.get_GMMA(close_price)
         all = np.c_[time_stamp, open_price, high_price, low_price, close_price, ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60]
-        data = pd.DataFrame(all,
-                            columns={"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15",
-                                     "16", "17"})
+        
 
         print(all)
         print("all")
@@ -169,6 +165,18 @@ class GMMA:
         data.to_csv(
             cwd + ".csv",
             index=True)
+
+    def publish_current_limit_price(self, num=100, open_price, periods="1m")
+        (time_stamp, open_price, high_price, low_price, close_price) = self.btc_charts.get_price_array_till_finaltime(
+            final_unixtime_stamp=time.time()-3600, num=num, periods=periods, converter=True)
+        (ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60) = self.get_GMMA(close_price)
+        ema=np.c_[ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60]
+	ema_latest_hour = ema[len(ema)-1]
+        open_curr = close_price[len(ema)-1]
+        sellprice = self.get_sellprice(ema_latest_hour, open_curr, periods)
+        buyprice = self.get_buyprice(ema_latest_hour, open_curr, periods)
+
+        return (buyprice, sellprice)
 
     def simulate(self,num=100, periods="1m"):
         (time_stamp, open_price, high_price, low_price, close_price) = self.btc_charts.get_price_array_till_finaltime(
@@ -179,8 +187,7 @@ class GMMA:
 
         grad_w=self.get_GMMA_gradient(ema, periods)
 
-        all = np.c_[
-            time_stamp, open_price, high_price, low_price, close_price, ema,grad_w]
+        all = np.c_[time_stamp, open_price, high_price, low_price, close_price, ema, grad_w]
 
         print(len(all))
 
@@ -204,11 +211,6 @@ class GMMA:
                     buy_times +=1
             elif hold == True:
                 assert(all[t][1]>=sell_price)
-                # if all[t][4]<all[t-1][10]:   #low price is lower than last ema8
-                #     hold = False
-                #     cash = all[t-1][7] * btc
-                #     btc = 0.
-                #     sell_times +=1
                 if all[t][3]<sell_price:   #low price is lower than sell_price
                     hold = False
                     cash = sell_price * btc
