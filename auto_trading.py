@@ -35,7 +35,6 @@ class AutoTrading:
 
     def trade_quoine_condmarket(self, type, buysellprice ,amount):
         print("trade_quoine")
-
         if type == 'BUY' or type == 'buy':
             #order = self.quoinex_api.create_market_buy(product_id=5, quantity=str(amount), price_range=str(buysellprice))
             order = self.quoinex_api.create_order(order_type='stop', product_id=5, side='buy', quantity=str(amount), price=str(buysellprice))
@@ -175,24 +174,91 @@ class AutoTrading:
 
         return(-2) # try too many times stop trading
 
-    #def get_property(self):
+    def bitf2qix(self, buy,sell):
+        try:
+            bid_mix_b = 0.0
+            bid_mix_q = 0.0
+            ask_mix_b = 0.0
+            ask_mix_q = 0.0
+            for i in range(0,10):
+                bid_mix_b += float(self.get_bid_ask_bitflyer()[0])*0.1
+                ask_mix_b += float(self.get_bid_ask_bitflyer()[1])*0.1
+                bid_mix_q += float(self.get_bid_ask_quoine()[0])*0.1
+                ask_mix_q += float(self.get_bid_ask_quoine()[1])*0.1
+                time.sleep(1)
+            sell = sell + bid_mix_q - bid_mix_b
+            buy = buy + ask_mix_q - ask_mix_b
 
-    #def get_profit(self):
+            sell = float(str('%.0f'%sell))
+            buy = float(str('%.0f'%buy))
+            predict.print_and_write('use adjusted price : buy %f sell %f' %(buy, sell))
+            return [buy, sell]
+        except Exception:
+            print('Expection while adjusting buy sell price, use default value')
+            return [buy, sell]
 
-    #def judge_if_ordered(self):
+
+    def get_profit(self):
+        balances = self.quoinex_api.get_account_balances()
+        jpy_avai = 0.0
+        btc_avai = 0.0
+        for balance in balances:
+            if balance['currency'] == 'BTC':
+                btc_avai = float(balance['balance'])
+            elif balance['currency'] == 'JPY':
+                jpy_avai = float(balance['balance'])
+        return ([jpy_avai, btc_avai])
+
+    def get_bid_ask_bitflyer(self, product_pair='BTC_JPY'):
+        if product_pair == '':
+            product_pair = 'BTC_JPY'
+        elif product_pair == 'BTC_ETH':
+            product_pair = 'ETH_BTC'
+        elif product_pair == 'BTC_LTC':
+            product_pair = 'LTC_BTC'
+        bitflyer_api = pybitflyer.API()
+        jsons_dict = bitflyer_api.ticker(product_code='%s' % (product_pair))
+        bid = jsons_dict['best_bid']
+        ask = jsons_dict['best_ask']
+        return [bid, ask]
+
+    def get_bid_ask_quoine(self, product_pair='BTC_JPY'):
+        if product_pair == 'BTC_JPY':
+            product_pair = 5
+        else:
+            product_pair = ''
+
+        quoine_api = client.Quoine()
+        jsons_dict = quoine_api.get_product(product_pair)
+        bid = jsons_dict['market_bid']
+        ask = jsons_dict['market_ask']
+        return ([bid, ask])
 
 if __name__ == '__main__':
     autoTrading = AutoTrading()
     prediction = predict.Predict()
+    profits = autoTrading.get_profit()
+    init_jpy = profits[0]
+    init_btc = profits[1]
+    predict.print_and_write('Profit jpy: %s btc: %s'%(init_jpy, init_btc))
+
     while 1:
         result = prediction.get_curr_cond_market_price()
         curtime = str(result[2][-1])
         predict.print_and_write('%s sell: %.0f , buy : %.0f' % (curtime, result[0][-1], result[1][-1]))
-        oid = autoTrading.onTrick_trade(result[1][-1], result[0][-1])
+        sell = result[0][-1]
+        buy = result[1][-1]
+        adjust_result = autoTrading.bitf2qix(buy, sell)
+        oid = autoTrading.onTrick_trade(adjust_result[0], adjust_result[1]) # buy ,sell
         #order = autoTrading.cancle_order(235147969)
         #order = autoTrading.get_orderbyid(235147969)
         if oid == -1 or oid == -2:
             print(oid)
             break
-        print('wait 15 min')
+        print('wait 60 min')
         time.sleep(60*60)
+        profits = autoTrading.get_profit()
+        cur_jpy = profits[0]
+        cur_btc = profits[1]
+        predict.print_and_write('Profit jpy: %s btc: %s' % (cur_jpy, cur_btc))
+
