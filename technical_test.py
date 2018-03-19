@@ -7,9 +7,9 @@ import numpy as np
 import historical
 import os
 import pandas as pd
-import plot_chart as plc
+#import plot_chart as plc
 import matplotlib.pyplot as plt
-from matplotlib.finance import candlestick_ohlc as plot_candle
+# from matplotlib.finance import candlestick_ohlc as plot_candle
 import time
 
 
@@ -148,7 +148,7 @@ class GMMA:
         print(ema)
 
         figure, ax = plt.subplots()
-        plot_candle(ax, plot_all, width=0.4, colorup='#77d879', colordown='#db3f3f')
+        # plot_candle(ax, plot_all, width=0.4, colorup='#77d879', colordown='#db3f3f')
         plt.plot(time_stamp, ema)
         plt.show()
 
@@ -166,15 +166,22 @@ class GMMA:
             cwd + ".csv",
             index=True)
 
-    def publish_current_limit_price(self, num=100, open_price, periods="1m")
+    def publish_current_limit_price(self, num=100, periods="1m"):
         (time_stamp, open_price, high_price, low_price, close_price) = self.btc_charts.get_price_array_till_finaltime(
-            final_unixtime_stamp=time.time()-3600, num=num, periods=periods, converter=True)
+        final_unixtime_stamp=time.time(), num=num, periods=periods, converter=True)
         (ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60) = self.get_GMMA(close_price)
         ema=np.c_[ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60]
-	ema_latest_hour = ema[len(ema)-1]
-        open_curr = close_price[len(ema)-1]
+        ema_latest_hour = ema[len(ema)-1]
+        open_curr = close_price[len(close_price)-1]
         sellprice = self.get_sellprice(ema_latest_hour, open_curr, periods)
         buyprice = self.get_buyprice(ema_latest_hour, open_curr, periods)
+        a=np.c_[time_stamp, open_price, high_price, low_price, close_price]
+        print(open_curr)
+
+
+
+        print(buyprice)
+        print(sellprice)
 
         return (buyprice, sellprice)
 
@@ -253,4 +260,7 @@ if __name__ == '__main__':
 
     gmma = GMMA()
     # gmma.save_chart_tillnow_to_csv(num=1000, periods="1H")
-    gmma.simulate(num=24*7*30+61, periods="1H")
+    #gmma.simulate(num=24*7*30+61, periods="1H")
+
+    a=gmma.publish_current_limit_price(periods="1H")
+
