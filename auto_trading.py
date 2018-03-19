@@ -47,14 +47,21 @@ class AutoTrading:
 
     #def get_balance(self):
 
-    def get_orders(self):
-        order = self.quoinex_api.get_orders()
-        #order = self.quoinex_api.get_orders(status='live')
-        return (order['models'])
+    def get_orders(self, status = 'live', limit = 10):
+        #order = self.quoinex_api.get_orders()
+        order = self.quoinex_api.get_orders(status, limit)
+        return (order)
 
     def get_orderbyid(self, id):
-        order = self.quoinex_api.get_order(id)
-        return (order)
+        try:
+            order = self.quoinex_api.get_order(id)
+            return (order)
+        except Exception:
+            print('Server is fucked off , search order by another way')
+            orders = self.quoinex_api.get_orders(limit= 20)
+            for i in orders['models']:
+                if i['id'] == id:
+                    return(i)
 
     def cancle_order(self, id):
         try:
@@ -63,10 +70,15 @@ class AutoTrading:
             return(remain_amount)
         except Exception:
             time.sleep(5)
-            order = self.get_orderbyid(id)
-            if order['status'] == 'filled':
-                print('Filled before cancelling')
-                return(0.0)
+            order = self.quoinex_api.get_orders(limit=40)
+            for i in order['models']:
+                if i['status'] == 'live':
+                    checkid = self.quoinex_api.cancel_order(i['id'])
+                    print('cancel a order id %d'%(i['id']))
+                    remain_amount = float(checkid['quantity']) - float(checkid['filled_quantity'])
+                    return(remain_amount)
+            print('Filled before cancelling')
+            return(0.0)
 
     def onTrick_trade(self, buyprice, sellprice, tradeamount = 1000.0):
 
@@ -177,8 +189,10 @@ if __name__ == '__main__':
         curtime = str(result[2][-1])
         predict.print_and_write('%s sell: %.0f , buy : %.0f' % (curtime, result[0][-1], result[1][-1]))
         oid = autoTrading.onTrick_trade(result[1][-1], result[0][-1])
+        #order = autoTrading.cancle_order(235147969)
+        #order = autoTrading.get_orderbyid(235147969)
         if oid == -1 or oid == -2:
-            break
             print(oid)
+            break
         print('wait 15 min')
-        time.sleep(60*15)
+        time.sleep(60*60)
