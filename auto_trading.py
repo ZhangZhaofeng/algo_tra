@@ -56,6 +56,7 @@ class AutoTrading:
             return (order)
         except Exception:
             print('Server is fucked off , search order by another way')
+            time.sleep(20)
             orders = self.quoinex_api.get_orders(limit= 20)
             for i in orders['models']:
                 if i['id'] == id:
@@ -261,7 +262,7 @@ if __name__ == '__main__':
     predict.print_and_write('Profit jpy: %s btc: %s'%(init_jpy, init_btc))
 
     while 1:
-        result = prediction.publish_current_limit_price(periods="1H")
+        result = prediction.publish_current_limit_price(periods="1m")
         predict.print_and_write('sell: %.0f , buy : %.0f' % (result[1], result[0]))
         sell = float(result[1])
         buy = float(result[0])
@@ -274,7 +275,7 @@ if __name__ == '__main__':
             print(oid)
             break
         print('wait 60 min')
-        time.sleep(60*60)
+        time.sleep(60)
         profits = autoTrading.get_profit()
         cur_jpy = profits[0]
         cur_btc = profits[1]
