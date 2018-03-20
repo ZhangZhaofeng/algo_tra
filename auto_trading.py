@@ -1,5 +1,4 @@
 
-
 from tradingapis.bitflyer_api import pybitflyer
 from tradingapis.bitbank_api import public_api, private_api
 from tradingapis.zaif_api.impl import ZaifPublicApi, ZaifTradeApi
@@ -79,7 +78,7 @@ class AutoTrading:
             print('Filled before cancelling')
             return(0.0)
 
-    def onTrick_trade(self, buyprice, sellprice, tradeamount = 1000.0):
+    def onTrick_trade(self, buyprice, sellprice, avg_open,  tradeamount = 1000.0):
 
         buyprice = float(buyprice)
         sellprice = float(sellprice)
@@ -107,15 +106,15 @@ class AutoTrading:
                 self.order_places['exist'] = False
                 self.order_places['id'] = 0
 
-                if self.order_places['remain'] < 0.005: # little remain treat as buy succeed
+                if self.order_places['remain'] < 0.001: # little remain treat as buy succeed
                     if self.order_places['type'] == 'buy': #
-                        predict.print_and_write('Buy order filled')
+                        predict.print_and_write('Buy order filled remain %f'%self.order_places['remain'])
                         self.holdflag = True
                         amount = tradeamount / sellprice - self.order_places['remain']
                         if amount < 0.001:
                             amount = 0.001
                     else: # treat as sell succeed
-                        predict.print_and_write('Sell order filled')
+                        predict.print_and_write('Sell order filled remain %f'%self.order_places['remain'])
                         self.holdflag = False
                         amount = tradeamount / buyprice - self.order_places['remain']
                         if amount < 0.001:
@@ -197,6 +196,24 @@ class AutoTrading:
             print('Expection while adjusting buy sell price, use default value')
             return [buy, sell]
 
+    def get_open(self):
+        try:
+            cur_time = time.strftime('%M:%S')
+            spend = (int(cur_time[0])*10 + int(cur_time[1]))*60 + int(cur_time[3])*10 + int(cur_time[4])
+            since = int(time.time()) -spend
+            executions = self.quoinex_api.get_executions_since_time(
+                product_id=5,
+                timestamp=since,
+                limit=20)
+            avg_open_price = 0.0
+            for i in executions:
+                avg_open_price += float(i['price'])
+            avg_open_price /= 20
+            return avg_open_price
+        except Exception:
+            print('Expection while adjusting buy sell price, use default value')
+            return 0.0
+
 
     def get_profit(self):
         balances = self.quoinex_api.get_account_balances()
@@ -234,6 +251,7 @@ class AutoTrading:
         ask = jsons_dict['market_ask']
         return ([bid, ask])
 
+
 if __name__ == '__main__':
     autoTrading = AutoTrading()
     prediction = predict.Predict()
@@ -243,13 +261,13 @@ if __name__ == '__main__':
     predict.print_and_write('Profit jpy: %s btc: %s'%(init_jpy, init_btc))
 
     while 1:
-        result = prediction.get_curr_cond_market_price()
-        curtime = str(result[2][-1])
-        predict.print_and_write('%s sell: %.0f , buy : %.0f' % (curtime, result[0][-1], result[1][-1]))
-        sell = result[0][-1]
-        buy = result[1][-1]
+        result = prediction.publish_current_limit_price(periods="1H")
+        predict.print_and_write('sell: %.0f , buy : %.0f' % (result[1], result[0]))
+        sell = float(result[1])
+        buy = float(result[0])
         adjust_result = autoTrading.bitf2qix(buy, sell)
-        oid = autoTrading.onTrick_trade(adjust_result[0], adjust_result[1]) # buy ,sell
+        avg_open = autoTrading.get_open()
+        oid = autoTrading.onTrick_trade(adjust_result[0], adjust_result[1], avg_open) # buy ,sell
         #order = autoTrading.cancle_order(235147969)
         #order = autoTrading.get_orderbyid(235147969)
         if oid == -1 or oid == -2:
@@ -261,4 +279,3 @@ if __name__ == '__main__':
         cur_jpy = profits[0]
         cur_btc = profits[1]
         predict.print_and_write('Profit jpy: %s btc: %s' % (cur_jpy, cur_btc))
-
