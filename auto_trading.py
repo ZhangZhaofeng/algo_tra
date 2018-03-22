@@ -22,15 +22,19 @@ class AutoTrading:
             'id': 0,
             'remain' : 0.0
         }
+    tradeamount = 1000
 
 
 
-    def __init__(self):
+    def __init__(self, holdflag = False, order_places = {'exist': False,'type': '','id': 0,'remain' : 0.0}, tradeamount = 1000):
         print("Initializing API")
         self.bitflyer_api = pybitflyer.API(api_key=str(ks.bitflyer_api), api_secret=str(ks.bitflyer_secret))
-        self.zaif_api = ZaifTradeApi(key=str(ks.zaif_api), secret=str(ks.zaif_secret))
+        #self.zaif_api = ZaifTradeApi(key=str(ks.zaif_api), secret=str(ks.zaif_secret))
         self.quoinex_api = client.Quoinex(api_token_id=str(ks.quoinex_api), api_secret=(ks.quoinex_secret))
-        self.bitbank_api = private_api.bitbankcc_private(api_key=str(ks.bitbank_api), api_secret=str(ks.bitbank_secret))
+        #self.bitbank_api = private_api.bitbankcc_private(api_key=str(ks.bitbank_api), api_secret=str(ks.bitbank_secret))
+        self.holdflag = holdflag
+        self.order_places = order_places
+        self.tradeamount = tradeamount
 
     def trade_quoine_condmarket(self, type, buysellprice ,amount):
         print("trade_quoine")
@@ -42,6 +46,8 @@ class AutoTrading:
         else:
             print("error!")
         return(order)
+
+
 
     #def get_balance(self):
 
@@ -79,20 +85,22 @@ class AutoTrading:
             print('Filled before cancelling')
             return(0.0)
 
-    def onTrick_trade(self, buyprice, sellprice, avg_open,  tradeamount = 1000.0):
+    def onTrick_trade(self, buyprice, sellprice, avg_open):
 
         buyprice = float(buyprice)
         sellprice = float(sellprice)
-        tradeamount = float(tradeamount)
+        tradeamount = float(self.tradeamount)
 
         if self.order_places['exist']: # if there is a order detect if it filled or not yet
 
             placed = self.get_orderbyid(self.order_places['id'])
-            if placed['status'] == 'filled':
 
+            if placed['status'] == 'filled':
+                #avg_price = float(placed['average_price'])
                 self.order_places['exist'] = False
                 self.order_places['id'] = 0
                 self.order_places['remain'] = .0
+
                 if self.order_places['type'] == 'buy':
                     predict.print_and_write('Buy order filled')
                     self.holdflag = True
@@ -254,7 +262,7 @@ class AutoTrading:
 
 
 if __name__ == '__main__':
-    autoTrading = AutoTrading()
+    autoTrading = AutoTrading(holdflag=True, order_places={'exist':True,'type':'buy','id':236894220,'remain':0.0}, tradeamount=60000)
     prediction = predict.Predict()
     profits = autoTrading.get_profit()
     init_jpy = profits[0]
@@ -266,9 +274,10 @@ if __name__ == '__main__':
         predict.print_and_write('sell: %.0f , buy : %.0f' % (result[1], result[0]))
         sell = float(result[1])
         buy = float(result[0])
-        adjust_result = autoTrading.bitf2qix(buy, sell)
-        avg_open = autoTrading.get_open()
-        oid = autoTrading.onTrick_trade(adjust_result[0], adjust_result[1], avg_open) # buy ,sell
+        #adjust_result = autoTrading.bitf2qix(buy, sell)
+        #avg_open = autoTrading.get_open()
+        #oid = autoTrading.onTrick_trade(adjust_result[0], adjust_result[1], avg_open) # buy ,sell
+        oid = autoTrading.onTrick_trade(buy, sell, 0)  # buy ,sell
         #order = autoTrading.cancle_order(235147969)
         #order = autoTrading.get_orderbyid(235147969)
         if oid == -1 or oid == -2:
