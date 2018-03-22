@@ -270,7 +270,7 @@ if __name__ == '__main__':
     predict.print_and_write('Profit jpy: %s btc: %s'%(init_jpy, init_btc))
 
     while 1:
-        result = prediction.publish_current_limit_price(periods="1m")
+        result = prediction.publish_current_limit_price(periods="1H")
         predict.print_and_write('sell: %.0f , buy : %.0f' % (result[1], result[0]))
         sell = float(result[1])
         buy = float(result[0])
@@ -284,7 +284,7 @@ if __name__ == '__main__':
             print(oid)
             break
         print('wait 60 min')
-        time.sleep(60)
+        time.sleep(60*60)
         profits = autoTrading.get_profit()
         cur_jpy = profits[0]
         cur_btc = profits[1]
