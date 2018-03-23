@@ -207,8 +207,9 @@ class GMMA:
         value = cash
         buy_times = 0
         sell_times = 0
+        cash0 = 0
         for t in range(62, len(all)):
-            cash0 = 0
+
             # (gradient_real, grad_w_real)=self.get_current_GMMA_gradient_realtime(ema[t-1], all[t][2], periods)
             sell_price = self.get_sellprice(ema[t - 1], all[t][1], periods)
             buy_price = self.get_buyprice(ema[t - 1], all[t][1], periods)
@@ -218,7 +219,7 @@ class GMMA:
                 # if all[t][17] > 0.1 and all[t][17] < 1.3 and all[t][18] > 0.0 and div_ratio[t][0]<1.05 :
                 if all[t][2] > buy_price: #:and hold_time >0: #and all[t][1] < buy_price:  # and #all[t-1][18] > 0.0:  #high price is higher than buy_price
                     hold = True
-                    btc = (cash * 1.1 / (buy_price+4000)) * 0.9925
+                    btc = (cash * 1.2 / (buy_price))
                     cash0 = cash
                     cash = 0.
                     buy_times += 1
@@ -229,14 +230,13 @@ class GMMA:
                 assert (all[t][1] >= sell_price)
                 if all[t][3] < sell_price:# and hold_time >0:# and all[t][1] > sell_price:  # low price is lower than sell_price
                     hold = False
-                    cash = (sell_price-4000) * btc * 0.9925 - cash0 * 0.1
-                    cash0 = 0
+                    cash = (sell_price) * btc  - cash0 * 0.2
                     btc = 0.
                     sell_times += 1
                     hold_time = 0
                 else:
                     hold_time += 1
-            value = cash + all[t][4] * btc * 1/ 1.1
+            value = cash + all[t][4] * btc * 1/ 1.2
             amount[t][0] = buy_price
             amount[t][1] = sell_price
             amount[t][2] = cash
@@ -274,4 +274,4 @@ if __name__ == '__main__':
     # gmma.save_chart_tillnow_to_csv(num=1000, periods="1H")
     #
     a=gmma.publish_current_limit_price(periods="1H")
-    gmma.simulate(num=24*7*4*1+61, periods="1H")
+    gmma.simulate(num=24*7*4*3+61, periods="1H")
