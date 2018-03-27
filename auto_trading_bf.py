@@ -20,41 +20,32 @@ class AutoTrading:
             'exist': False,
             'type': '',
             'id': '',
-            'remain' : 0.0
+            'remain' : 0.0,
+            'trade_price' : ''
         }
     tradeamount = 1000
+    position = 0
 
 
-
-    def __init__(self, holdflag = False, order_places = {'exist': False, 'type': '','id': 0,'remain' : 0.0}, tradeamount = 1000):
+    def __init__(self, holdflag = False, order_places = {'exist': False, 'type': '','id': 0,'remain' : 0.0, 'trade_price' : ''}, tradeamount = 1000, position = 0.0):
         print("Initializing API")
         self.bitflyer_api = pybitflyer.API(api_key=str(ks.bitflyer_api), api_secret=str(ks.bitflyer_secret))
-        self.holdflag = holdflag
-        self.order_places = order_places
-        self.tradeamount = tradeamount
+        self.holdflag = holdflag # if hold bitcoin
+        self.order_places = order_places # specific an exist order
+        self.tradeamount = tradeamount # init trade amount only if order not exist
+        self.position = 0.0 # remain position (btc)
 
-    def trade_bitflyer_constoplimit(self, type, buysellprice, amount):
+    def trade_bitflyer_constoplimit(self, type, buysellprice, amount, slide = 100):
         product= 'BTC_JPY'
-        slide = 100
         print('trade bitflyer')
         if type == 'BUY' or type == 'buy':
             # order = self.quoinex_api.create_market_buy(product_id=5, quantity=str(amount), price_range=str(buysellprice))
             parameters =  [{ 'product_code' : product, 'condition_type' : 'STOP_LIMIT', 'side': 'BUY',
                             'price': str(buysellprice+slide), 'size': str(amount), 'trigger_price': str(buysellprice)}]
-
-            #order = self.bitflyer_api.sendchildorder(product_code="BTC_JPY",
-            #                                         child_order_type="MARKET",
-            #                                         side="BUY",
-            #                                         size=amount,
-            #                                         minute_to_expire=10000,
-            #                                         time_in_force="GTC"
-            #                                         )
-
             order = self.bitflyer_api.sendparentorder(order_method='SIMPLE', parameters=parameters)
         elif type == "SELL" or type == "sell":
             parameters = [{'product_code': product, 'condition_type': 'STOP_LIMIT', 'side': 'SELL',
                           'price': str(buysellprice-slide), 'size': str(amount), 'trigger_price': str(buysellprice)}]
-
             order = self.bitflyer_api.sendparentorder(order_method='SIMPLE', parameters=parameters)
         else:
             print("error!")
@@ -122,60 +113,55 @@ class AutoTrading:
         buyprice = float(buyprice)
         sellprice = float(sellprice)
         tradeamount = float(self.tradeamount)
+        slide = 100
+
 
         if self.order_places['exist']: # if there is a order detect if it filled or not yet
 
             placed = self.get_orderbyid(self.order_places['id'])
+            if self.order_places['type'] == 'buy':
+                self.position += placed['executed_size']
+            elif self.order_places['type'] == 'sell':
+                self.position -= placed['executed_size']
 
-            if placed['executed_size'] == self.order_places['remain']:
+
+            if self.order_places['remain'] - placed['executed_size'] < 0.001  : # if filled
             #if placed['status'] == 'filled':
                 #avg_price = float(placed['average_price'])
-                self.order_places['exist'] = False
-                self.order_places['id'] = 0
-                self.order_places['remain'] = .0
-
                 if self.order_places['type'] == 'buy':
                     predict.print_and_write('Buy order filled')
                     self.holdflag = True
-                    amount = tradeamount / sellprice
+                    amount = self.position
+                    #amount = trademount / sellprice
+                    #amount = self.order_places['remain']
                 else:
                     predict.print_and_write('Sell order filled')
                     self.holdflag = False
-                    amount = tradeamount / buyprice
+                    amount = placed['executed_size'] * self.order_places['trade_price'] / buyprice - self.position
+
+                self.order_places['exist'] = False
+                self.order_places['id'] = 0
+                self.order_places['remain'] = .0
 
             else: # not filled or partly filled
                 self.order_places['remain'] = self.cancle_order(self.order_places['id'])
                 self.order_places['exist'] = False
                 self.order_places['id'] = 0
 
-                if self.order_places['remain'] < 0.001: # little remain treat as buy succeed
-                    if self.order_places['type'] == 'buy': #
-                        predict.print_and_write('Buy order filled remain %f'%self.order_places['remain'])
-                        self.holdflag = True
-                        amount = tradeamount / sellprice - self.order_places['remain']
-                        if amount < 0.001:
-                            amount = 0.001
-                    else: # treat as sell succeed
-                        predict.print_and_write('Sell order filled remain %f'%self.order_places['remain'])
-                        self.holdflag = False
-                        amount = tradeamount / buyprice - self.order_places['remain']
-                        if amount < 0.001:
-                            amount = 0.001
-
-                else: # partly filled and large remain treat as buy failed
-                    if self.order_places['type'] == 'buy': #
-                        predict.print_and_write('Buy order not filled buy again')
-                        self.holdflag = False
-                        amount = self.order_places['remain'] # continue buy
-                        if amount < 0.001:
-                            amount = 0.001
+                 # not filled
+                if self.order_places['type'] == 'buy': #
+                    predict.print_and_write('Buy order not filled buy again')
+                    self.holdflag = False
+                    amount = self.order_places['remain'] * self.order_places['trade_price'] / buyprice # continue buy
+                    if amount < 0.001:
+                        amount = 0.001
                         #
-                    else: # treat as sell succeed
-                        predict.print_and_write('Sell order not filled sell again')
-                        self.holdflag = True
-                        amount = self.order_places['remain'] # continue sell
-                        if amount < 0.001:
-                            amount = 0.001
+                else: # treat as sell succeed
+                    predict.print_and_write('Sell order not filled sell again')
+                    self.holdflag = True
+                    amount = self.order_places['remain'] # continue sell
+                    if amount < 0.001:
+                        amount = 0.001
 
         else:
             if self.holdflag:
@@ -198,15 +184,19 @@ class AutoTrading:
         while try_times > 0:
             try:
                 if side == 'sell':
-                    new_order = self.trade_bitflyer_constoplimit(side, sellprice, amount)
+                    new_order = self.trade_bitflyer_constoplimit(side, sellprice, amount, slide)
+                    self.order_places['trade_price'] = sellprice - slide
                     predict.print_and_write('Order placed sell %f @ %f'%(amount, sellprice))
                 else:
-                    new_order = self.trade_bitflyer_constoplimit(side, buyprice, amount)
+                    new_order = self.trade_bitflyer_constoplimit(side, buyprice, amount, slide)
+                    self.order_places['trade_price'] = buyprice + slide
                     predict.print_and_write('Order placed buy %f @ %f' % (amount, buyprice))
                 self.order_places['exist'] = True
                 self.order_places['id'] = new_order['parent_order_acceptance_id']
                 self.order_places['remain'] = amount
                 self.order_places['type'] = side
+
+                predict.print_and_write('order: id %s, amount: %s, type: %s, price: %s'%(new_order['parent_order_acceptance_id'], str(amount), side, str(self.order_places['trade_price'])) )
                 return(self.order_places['id'])
             except Exception:
                 print('Error! Try again')
@@ -232,8 +222,15 @@ class AutoTrading:
         return ([jpy_avai, btc_avai])
 
 
+
+
 if __name__ == '__main__':
-    autoTrading = AutoTrading(holdflag=False, order_places={'exist':False,'type':'','id':'','remain':0.0}, tradeamount=10000)
+    tradeamount0 = 900
+    if 0:
+        order_places = {'exist' : False,'type' : '','id' : '','remain' : 0.0, 'trade_price' : ''}
+    else:
+        order_places = {'exist': True, 'type': 'buy', 'id': 'JRF20180327-090033-756938', 'remain': 0.001, 'trade_price': 849366.0}
+    autoTrading = AutoTrading(holdflag=False, order_places=order_places, tradeamount=tradeamount0)
     prediction = predict.Predict()
     profits = autoTrading.get_profit()
     init_jpy = profits[0]
@@ -251,8 +248,8 @@ if __name__ == '__main__':
         oid = autoTrading.onTrick_trade(buy, sell, 0)  # buy ,sell
         #order = autoTrading.cancle_order(235147969)
         #order = autoTrading.get_orderbyid(235147969)
+        print(oid)
         if oid == -1 or oid == -2:
-            print(oid)
             break
         print('wait 60 min')
         time.sleep(60*60)
