@@ -19,7 +19,7 @@ class AutoTrading:
     order_places = {
             'exist': False,
             'type': '',
-            'id': 0,
+            'id': '',
             'remain' : 0.0
         }
     tradeamount = 1000
@@ -233,7 +233,7 @@ class AutoTrading:
 
 
 if __name__ == '__main__':
-    autoTrading = AutoTrading(holdflag=False, order_places={'exist':False,'type':'','id':0,'remain':0.0}, tradeamount=1000)
+    autoTrading = AutoTrading(holdflag=False, order_places={'exist':False,'type':'','id':'','remain':0.0}, tradeamount=10000)
     prediction = predict.Predict()
     profits = autoTrading.get_profit()
     init_jpy = profits[0]
