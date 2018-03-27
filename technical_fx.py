@@ -83,7 +83,7 @@ class GMMA:
         delta = 1000
         for i in range(0, 100):
             (gradient, grad_w) = self.get_current_GMMA_gradient_realtime(last_ema_all, price, periods)
-            if grad_w[0] < -0.0:
+            if grad_w[0] < 0.0:
                 break
             price -= delta
 
@@ -256,7 +256,7 @@ class GMMA:
 
             leverage=1.0
             # print(ema[t - 1])
-            fee_ratio=0.000
+            fee_ratio=0.000 #trading fee percent
             if hold == False:
                 buy_price = self.get_buyprice(ema[t - 1], all[t][1], periods)
                 sell_price = self.get_sellprice(ema[t - 1], all[t][1], periods)
@@ -270,14 +270,13 @@ class GMMA:
                     buy_times += 1
                     prev_buy_price=buy_price
                     amount[t][5] = 888
-                    if all[t][4] < sell_price:  # and #all[t-1][18] > 0.0:  #high price is higher than buy_price
+                    if all[t][4] < sell_price:  # if close < sell_price, sell within current hour
                         hold = False
-                        # print(prev_cash)
                         cash = sell_price * btc * (1 - fee_ratio) - (leverage - 1) * prev_cash
                         btc = 0.
                         sell_times += 1
                         amount[t][6] = 666
-                elif all[t][3] < div_buyprice:  # and #all[t-1][18] > 0.0:  #high price is higher than buy_price
+                elif all[t][3] < div_buyprice:  # sell if too high
                     hold = True
                     prev_cash=cash
                     btc = cash*leverage / div_buyprice*(1-fee_ratio)
@@ -290,7 +289,7 @@ class GMMA:
                 sell_price = self.get_sellprice(ema[t - 1], all[t][1], periods)
                 div_sellprice = self.get_divsellprice(ema[t - 1], all[t][1], periods)
                 assert (all[t][1] >= sell_price)
-                if all[t][4] < sell_price:  # low price is lower than sell_price
+                if all[t][4] < sell_price:  # close price is lower than sell_price
                     hold = False
                     # print(prev_cash)
                     cash = sell_price * btc*(1-fee_ratio)- (leverage-1)*prev_cash
@@ -298,7 +297,7 @@ class GMMA:
                     sell_times += 1
                     prev_sell_price= sell_price
                     amount[t][6] = 555
-                elif all[t][2]>div_sellprice:
+                elif all[t][2]>div_sellprice: # buy if too low
                     hold = False
                     # print(prev_cash)
                     cash = div_sellprice * btc * (1 - fee_ratio) - (leverage - 1) * prev_cash
