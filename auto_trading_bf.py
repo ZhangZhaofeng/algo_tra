@@ -253,7 +253,7 @@ if __name__ == '__main__':
         if oid == -1 or oid == -2:
             break
         print('wait 60 min')
-        time.sleep(1)
+        time.sleep(3600)
         profits = autoTrading.get_profit()
         cur_jpy = profits[0]
         cur_btc = profits[1]
