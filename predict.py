@@ -12,7 +12,7 @@ import memcache
 def print_and_write(a_string, filename = './autotrading_log'):
     print(a_string)
 
-    time_str = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime())
+    time_str = time.strftime('%Y-%m-%d %H:%M:%S')
     log_file = Path(filename)
     if log_file.is_file():
         with open(filename, 'a') as lf:
