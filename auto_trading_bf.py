@@ -113,7 +113,7 @@ class AutoTrading:
         buyprice = float(buyprice)
         sellprice = float(sellprice)
         tradeamount = float(self.tradeamount)
-        slide = 100
+        slide = 10
 
 
         if self.order_places['exist']: # if there is a order detect if it filled or not yet
@@ -121,9 +121,10 @@ class AutoTrading:
             placed = self.get_orderbyid(self.order_places['id'])
             if self.order_places['type'] == 'buy':
                 self.position += placed['executed_size']
+                self.tradeamount -= placed['executed_size'] * self.order_places['trade_price']
             elif self.order_places['type'] == 'sell':
                 self.position -= placed['executed_size']
-
+                self.tradeamount += placed['executed_size'] * self.order_places['trade_price']
 
             if self.order_places['remain'] - placed['executed_size'] < 0.001  : # if filled
             #if placed['status'] == 'filled':
@@ -137,7 +138,7 @@ class AutoTrading:
                 else:
                     predict.print_and_write('Sell order filled')
                     self.holdflag = False
-                    amount = placed['executed_size'] * self.order_places['trade_price'] / buyprice - self.position
+                    amount = self.tradeamount / buyprice
 
                 self.order_places['exist'] = False
                 self.order_places['id'] = 0
@@ -152,7 +153,7 @@ class AutoTrading:
                 if self.order_places['type'] == 'buy': #
                     predict.print_and_write('Buy order not filled buy again')
                     self.holdflag = False
-                    amount = self.order_places['remain'] * self.order_places['trade_price'] / buyprice # continue buy
+                    amount = tradeamount / buyprice # continue buy
                     if amount < 0.001:
                         amount = 0.001
                         #
@@ -225,11 +226,11 @@ class AutoTrading:
 
 
 if __name__ == '__main__':
-    tradeamount0 = 900
+    tradeamount0 = 5000
     if 0:
         order_places = {'exist' : False,'type' : '','id' : '','remain' : 0.0, 'trade_price' : ''}
     else:
-        order_places = {'exist': True, 'type': 'buy', 'id': 'JRF20180327-090033-756938', 'remain': 0.001, 'trade_price': 849366.0}
+        order_places = {'exist': True, 'type': 'buy', 'id': 'JRF20180327-094242-640171', 'remain': 0.006, 'trade_price': 849276.0}
     autoTrading = AutoTrading(holdflag=False, order_places=order_places, tradeamount=tradeamount0)
     prediction = predict.Predict()
     profits = autoTrading.get_profit()
@@ -252,7 +253,7 @@ if __name__ == '__main__':
         if oid == -1 or oid == -2:
             break
         print('wait 60 min')
-        time.sleep(60*60)
+        time.sleep(1)
         profits = autoTrading.get_profit()
         cur_jpy = profits[0]
         cur_btc = profits[1]
