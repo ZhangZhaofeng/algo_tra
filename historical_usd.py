@@ -51,7 +51,7 @@ class charts:
         assert (startTimestamp < endTimestamp)
         query = {"periods": periods, "after": str(int(startTimestamp)), "before": str(int(endTimestamp))}
         res = \
-        json.loads(requests.get("https://api.cryptowat.ch/markets/bitflyer/btcfxjpy/ohlc", params=query).text)["result"][
+        json.loads(requests.get("https://api.cryptowat.ch/markets/bitfinex/btcusd/ohlc", params=query).text)["result"][
             periods]
         res = np.array(res)
         time_stamp = res[:, 0].reshape(len(res), 1)

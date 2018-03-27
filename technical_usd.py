@@ -4,7 +4,7 @@
 
 import talib
 import numpy as np
-import historical
+import historical_usd
 import os
 import pandas as pd
 # import plot_chart as plc
@@ -16,7 +16,7 @@ import time
 class GMMA:
     def __init__(self):
         print("GMMA initialized")
-        self.btc_charts = historical.charts()
+        self.btc_charts = historical_usd.charts()
 
     def EMA(self, ndarray, timeperiod=4):
         x = np.array([talib.EMA(ndarray.T[0], timeperiod)])
@@ -69,7 +69,7 @@ class GMMA:
                 self.btc_charts.period_converter(periods))
 
         grad_w = np.zeros(12)
-        w_short = np.matrix([0.1, 0.1, 0.1, 0.1, 0.3, 0.3, 0., 0., 0., 0., 0., 0.])
+        w_short = np.matrix([0.1, 0.2, 0.2, 0.2, 0.2, 0.2, 0., 0., 0., 0., 0., 0.])
         w_long = np.matrix([0., 0., 0., 0., 0., 0., 0.2, 0.2, 0.2, 0.2, 0.1, 0.1])
 
         grad_w[0] = w_short * gradient[0].reshape(12, 1)
@@ -80,10 +80,10 @@ class GMMA:
     def get_sellprice(self, last_ema_all, current_open, periods):
         price = current_open
 
-        delta = 1000
-        for i in range(0, 1000):
+        delta = 5
+        for i in range(0, 10000):
             (gradient, grad_w) = self.get_current_GMMA_gradient_realtime(last_ema_all, price, periods)
-            if grad_w[0] < -0.3/100:
+            if grad_w[0] < -0.003:
                 break
             price -= delta
 
@@ -92,10 +92,10 @@ class GMMA:
     def get_buyprice(self, last_ema_all, current_open, periods):
         price = current_open
 
-        delta = 1000
-        for i in range(0, 1000):
+        delta = 5
+        for i in range(0, 10000):
             (gradient, grad_w) = self.get_current_GMMA_gradient_realtime(last_ema_all, price, periods)
-            if grad_w[0] > 0.2/100:
+            if grad_w[0] > 0.002:
                 break
             price += delta
 
@@ -114,7 +114,7 @@ class GMMA:
 
         # compute weighted composite gradients for both 6 long and 6 short EMA lines, respectively.
         grad_w = np.zeros([len(ema), 2])
-        w_short = np.matrix([0.1, 0.1, 0.2, 0.2, 0.2, 0.2, 0., 0., 0., 0., 0., 0.])
+        w_short = np.matrix([0.1, 0.1, 0.1, 0.2, 0.2, 0.3, 0., 0., 0., 0., 0., 0.])
         w_long = np.matrix([0., 0., 0., 0., 0., 0., 0.2, 0.2, 0.2, 0.2, 0.1, 0.1])
 
         for t in range(len(gradient)):
@@ -176,15 +176,16 @@ class GMMA:
         ema_latest_hour = ema[len(ema) - 1]
         open_curr = close_price[len(close_price) - 1]
 
-        [a,b]=self.get_current_GMMA_gradient_realtime(ema_latest_hour.astype(float), open_curr.astype(float), periods)
-        grad_weighted=b[0]
+        [a, b] = self.get_current_GMMA_gradient_realtime(ema_latest_hour.astype(float), open_curr.astype(float),
+                                                         periods)
+        grad_weighted = b[0]
         sellprice = self.get_sellprice(ema_latest_hour.astype(float), open_curr.astype(float), periods)
         buyprice = self.get_buyprice(ema_latest_hour.astype(float), open_curr.astype(float), periods)
-        print("Current grad_weighted= %s" %b[0])
+        print("Current grad_weighted= %s" % b[0])
         print([time_stamp[len(time_stamp) - 1], open_curr[0], buyprice[0], sellprice[0]])
         return (buyprice, sellprice, grad_weighted)
 
-    def simulate(self, num=100, periods="1m" ,end_offset=0):
+    def simulate(self, num=100, periods="1m", end_offset=0):
         (time_stamp, open_price, high_price, low_price, close_price) = self.btc_charts.get_price_array_till_finaltime(
             final_unixtime_stamp=time.time() - end_offset, num=num, periods=periods, converter=True)
         (ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60) = self.get_GMMA(close_price)
@@ -256,14 +257,16 @@ class GMMA:
 
         cwd = os.getcwd()
         data.to_csv(
-            cwd + ".csv",
+            cwd + "_usd.csv",
             index=True)
+
+        return value
 
 
 if __name__ == '__main__':
     # directly
 
-    btc_charts = historical.charts()
+    btc_charts = historical_usd.charts()
 
     (time_stamp, open_price, high_price, low_price, close_price) = btc_charts.get_price_array_till_finaltime()
 
@@ -271,6 +274,14 @@ if __name__ == '__main__':
 
     gmma = GMMA()
     # gmma.save_chart_tillnow_to_csv(num=1000, periods="1H")
-    gmma.simulate(num=24 *30*10+ 61, periods="1H",end_offset=3600*24*30*0.0)
+    # gmma.simulate(num=24 * 30 * 1 + 61, periods="1H", end_offset=3600 * 24 * 30 * 1)
+
+    sum=0.
+    length=7
+    for i in range(length):
+        value=gmma.simulate(num=24 * 30 * 1 + 61, periods="1H", end_offset=3600 * 24 * 30 * i)
+        sum=sum+value
     # gmma.simulate(num=60*24*50+61, periods="1m", end_offset=0)
     # a=gmma.publish_current_limit_price(periods="1H")
+
+    print(sum/length)

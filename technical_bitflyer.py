@@ -68,8 +68,8 @@ class GMMA:
             gradient[0][i] = (current_ema_all[0][i] - last_ema_all[i]) / float(
                 self.btc_charts.period_converter(periods))
 
-        grad_w = np.zeros(12)
-        w_short = np.matrix([0.1, 0.1, 0.1, 0.1, 0.3, 0.3, 0., 0., 0., 0., 0., 0.])
+        grad_w = np.zeros(2)
+        w_short = np.matrix([0.1, 0.1, 0.2, 0.2, 0.2, 0.2, 0., 0., 0., 0., 0., 0.])
         w_long = np.matrix([0., 0., 0., 0., 0., 0., 0.2, 0.2, 0.2, 0.2, 0.1, 0.1])
 
         grad_w[0] = w_short * gradient[0].reshape(12, 1)
@@ -77,25 +77,25 @@ class GMMA:
 
         return (gradient, grad_w)
 
-    def get_sellprice(self, last_ema_all, current_open, periods):
+    def get_sellprice(self, last_ema_all, current_open, periods, grad_w_prev):
         price = current_open
 
         delta = 1000
-        for i in range(0, 1000):
+        for i in range(0, 100):
             (gradient, grad_w) = self.get_current_GMMA_gradient_realtime(last_ema_all, price, periods)
-            if grad_w[0] < -0.3/100:
+            if grad_w[0] < -0.2:
                 break
             price -= delta
 
         return price
 
-    def get_buyprice(self, last_ema_all, current_open, periods):
+    def get_buyprice(self, last_ema_all, current_open, periods, grad_w_prev):
         price = current_open
 
         delta = 1000
-        for i in range(0, 1000):
+        for i in range(0, 100):
             (gradient, grad_w) = self.get_current_GMMA_gradient_realtime(last_ema_all, price, periods)
-            if grad_w[0] > 0.2/100:
+            if grad_w[0] > 0.2:
                 break
             price += delta
 
@@ -114,7 +114,7 @@ class GMMA:
 
         # compute weighted composite gradients for both 6 long and 6 short EMA lines, respectively.
         grad_w = np.zeros([len(ema), 2])
-        w_short = np.matrix([0.1, 0.1, 0.2, 0.2, 0.2, 0.2, 0., 0., 0., 0., 0., 0.])
+        w_short = np.matrix([0.1, 0.1, 0.1, 0.1, 0.2, 0.4, 0., 0., 0., 0., 0., 0.])
         w_long = np.matrix([0., 0., 0., 0., 0., 0., 0.2, 0.2, 0.2, 0.2, 0.1, 0.1])
 
         for t in range(len(gradient)):
@@ -206,34 +206,45 @@ class GMMA:
         sell_times = 0
         for t in range(61, len(all)):
             # (gradient_real, grad_w_real)=self.get_current_GMMA_gradient_realtime(ema[t-1], all[t][2], periods)
-            sell_price = self.get_sellprice(ema[t - 1], all[t][1], periods)
-            buy_price = self.get_buyprice(ema[t - 1], all[t][1], periods)
+            sell_price = self.get_sellprice(ema[t - 1], all[t][1], periods, grad_w[t-1])
+            buy_price = self.get_buyprice(ema[t - 1], all[t][1], periods, grad_w[t-1])
+            prev_buy_price=0.
+            prev_sell_price=0.
 
             # print(ema[t - 1])
+            ratio=0.000
+            fee_times=0
             if hold == False:
                 # if all[t][17] > 0.1 and all[t][17] < 1.3 and all[t][18] > 0.0 and div_ratio[t][0]<1.05 :
                 if all[t][2] > buy_price:  # and #all[t-1][18] > 0.0:  #high price is higher than buy_price
                     hold = True
-                    btc = cash / buy_price
+                    btc = cash / buy_price*(1-ratio)
                     cash = 0.
                     buy_times += 1
-                    # if all[t][3]< sell_price:
-                    #     hold = False
-                    #     cash = sell_price * btc
-                    #     btc = 0.
-                    #     sell_times += 1
+                    prev_buy_price=buy_price
+                    if all[t][4]< sell_price:
+                        hold = False
+                        cash = sell_price * btc
+                        btc = 0.
+                        sell_times += 1
+                    if not (all[t][3] >sell_price and all[t][4] > sell_price):
+                        cash = cash*np.power((1-ratio),fee_times)
+                        btc = btc*np.power((1-ratio),fee_times)
+                        sell_times += fee_times/2
+                        buy_times += fee_times/2
+
             elif hold == True:
                 assert (all[t][1] >= sell_price)
-                if all[t][3] < sell_price:  # low price is lower than sell_price
+                if all[t][4] < sell_price:  # low price is lower than sell_price
                     hold = False
-                    cash = sell_price * btc
+                    cash = sell_price * btc*(1-ratio)
                     btc = 0.
                     sell_times += 1
-                    # if all[t][2] > buy_price:  # and #all[t-1][18] > 0.0:  #high price is higher than buy_price
-                    #     hold = True
-                    #     btc = cash / buy_price
-                    #     cash = 0.
-                    #     buy_times += 1
+                if not (all[t][3] >sell_price and all[t][4] > sell_price):
+                    cash = cash*np.power((1-ratio),fee_times)
+                    btc = btc*np.power((1-ratio),fee_times)
+                    sell_times += fee_times/2
+                    buy_times += fee_times/2
 
             value = cash + all[t][4] * btc
             amount[t][0] = buy_price
@@ -256,8 +267,10 @@ class GMMA:
 
         cwd = os.getcwd()
         data.to_csv(
-            cwd + ".csv",
+            cwd + "_jpy.csv",
             index=True)
+
+        return value
 
 
 if __name__ == '__main__':
@@ -271,6 +284,15 @@ if __name__ == '__main__':
 
     gmma = GMMA()
     # gmma.save_chart_tillnow_to_csv(num=1000, periods="1H")
-    gmma.simulate(num=24 *30*10+ 61, periods="1H",end_offset=3600*24*30*0.0)
+    # gmma.simulate(num=24 *30*9+ 61, periods="1H",end_offset=3600*24*30*0)
+    # a=gmma.publish_current_limit_price(periods="1H")
+
+    sum = 0.
+    length = 8
+    for i in range(length):
+        value = gmma.simulate(num=24 * 30 * 1 + 61, periods="1H", end_offset=3600 * 24 * 30 * i)
+        sum = sum + value
     # gmma.simulate(num=60*24*50+61, periods="1m", end_offset=0)
     # a=gmma.publish_current_limit_price(periods="1H")
+
+    print(sum / length)

@@ -14,7 +14,7 @@ if __name__ == "__main__":
     query = {"periods": ','.join(periods)}
 
     # ローソク足取得
-    res = json.loads(requests.get("https://api.cryptowat.ch/markets/bitflyer/btcjpy/ohlc", params=query).text)[
+    res = json.loads(requests.get("https://api.cryptowat.ch/markets/bitfinex/btcusd/ohlc", params=query).text)[
         "result"]
 
     # 表示

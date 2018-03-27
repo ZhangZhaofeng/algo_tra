@@ -69,7 +69,7 @@ class GMMA:
                 self.btc_charts.period_converter(periods))
 
         grad_w = np.zeros(12)
-        w_short = np.matrix([0.1, 0.1, 0.1, 0.1, 0.3, 0.3, 0., 0., 0., 0., 0., 0.])
+        w_short = np.matrix([0.1, 0.2, 0.2, 0.2, 0.2, 0.2, 0., 0., 0., 0., 0., 0.])
         w_long = np.matrix([0., 0., 0., 0., 0., 0., 0.2, 0.2, 0.2, 0.2, 0.1, 0.1])
 
         grad_w[0] = w_short * gradient[0].reshape(12, 1)
@@ -83,7 +83,7 @@ class GMMA:
         delta = 1000
         for i in range(0, 1000):
             (gradient, grad_w) = self.get_current_GMMA_gradient_realtime(last_ema_all, price, periods)
-            if grad_w[0] < -0.3/100:
+            if grad_w[0] < -0.01:
                 break
             price -= delta
 
@@ -95,7 +95,7 @@ class GMMA:
         delta = 1000
         for i in range(0, 1000):
             (gradient, grad_w) = self.get_current_GMMA_gradient_realtime(last_ema_all, price, periods)
-            if grad_w[0] > 0.2/100:
+            if grad_w[0] > 0.01:
                 break
             price += delta
 
