@@ -57,7 +57,7 @@ class AutoTrading:
         #ACTIVE CANCELED
         product = 'BTC_JPY'
         if status != '':
-            order = self.bitflyer_api.getparentorders(product_code=product, child_order_state=status)
+            order = self.bitflyer_api.getparentorders(product_code=product, parent_order_state=status)
         else:
             order = self.bitflyer_api.getparentorders(product_code=product, count=30)
         return (order)
@@ -112,7 +112,6 @@ class AutoTrading:
 
         buyprice = float(buyprice)
         sellprice = float(sellprice)
-        tradeamount = float(self.tradeamount)
         slide = 10
 
 
@@ -153,7 +152,7 @@ class AutoTrading:
                 if self.order_places['type'] == 'buy': #
                     predict.print_and_write('Buy order not filled buy again')
                     self.holdflag = False
-                    amount = tradeamount / buyprice # continue buy
+                    amount = self.tradeamount / buyprice # continue buy
                     if amount < 0.001:
                         amount = 0.001
                         #
@@ -166,9 +165,9 @@ class AutoTrading:
 
         else:
             if self.holdflag:
-                amount = tradeamount / sellprice
+                amount = self.tradeamount / sellprice
             else:
-                amount = tradeamount / buyprice
+                amount = self.tradeamount / buyprice
 
         if self.holdflag:
             side = 'sell'
@@ -226,11 +225,11 @@ class AutoTrading:
 
 
 if __name__ == '__main__':
-    tradeamount0 = 5000
+    tradeamount0 = 29598
     if 0:
         order_places = {'exist' : False,'type' : '','id' : '','remain' : 0.0, 'trade_price' : ''}
     else:
-        order_places = {'exist': True, 'type': 'buy', 'id': 'JRF20180327-094242-640171', 'remain': 0.006, 'trade_price': 849276.0}
+        order_places = {'exist': True, 'type': 'buy', 'id': 'JRF20180328-004942-115563', 'remain': 0.035, 'trade_price': 846725.0}
     autoTrading = AutoTrading(holdflag=False, order_places=order_places, tradeamount=tradeamount0)
     prediction = predict.Predict()
     profits = autoTrading.get_profit()
