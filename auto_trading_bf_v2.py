@@ -347,11 +347,11 @@ class AutoTrading:
 
 if __name__ == '__main__':
     tradeamount0 = 1000
-    waiting_time = 36
+    waiting_time = 3600
     detect_fre = 8
     if 1:
         order_places = {'exist' : False,'type' : '','id' : '','remain' : 0.0, 'trade_price' : ''}
-    else:
+    else: # if you want to recover the prcessing , input the detail of your order in following and change 'if 1' to 'if 0'
         order_places = {'exist': True, 'type': 'buy', 'id': 'JRF20180328-004942-115563', 'remain': 0.035, 'trade_price': 846725.0, 'slide': 0.0}
     autoTrading = AutoTrading(holdflag=False, order_places=order_places, tradeamount=tradeamount0)
     prediction = predict.Predict()
@@ -368,12 +368,13 @@ if __name__ == '__main__':
         #adjust_result = autoTrading.bitf2qix(buy, sell)
         #avg_open = autoTrading.get_open()
         #oid = autoTrading.onTrick_trade(adjust_result[0], adjust_result[1], avg_open) # buy ,sell
-        oid = autoTrading.onTrick_trade(buy, sell, slide=10)  # buy ,sell
-        oid2 = autoTrading.detect_in_one_tunit(waiting_time, detect_fre, slide=20)
+        oid = autoTrading.onTrick_trade(buy, sell, slide=10)  # trade first time
+        oid2 = autoTrading.detect_in_one_tunit(waiting_time, detect_fre, slide=20) # adjust the prices
         #order = autoTrading.cancle_order(235147969)
         #order = autoTrading.get_orderbyid(235147969)
         print(oid)
-        if oid == -1 or oid == -2:
+        print(oid2)
+        if oid == -1 or oid == -2 or oid2 == -1 or oid2 == -2:
             break
         #print('wait 60 min')
         #time.sleep(3600)
