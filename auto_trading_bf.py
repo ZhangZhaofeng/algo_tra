@@ -229,7 +229,7 @@ class AutoTrading:
 
 if __name__ == '__main__':
     tradeamount0 = 29374
-    if 0:
+    if 1:
         order_places = {'exist' : False,'type' : '','id' : '','remain' : 0.0, 'trade_price' : ''}
     else:
         order_places = {'exist': True, 'type': 'sell', 'id': 'JRF20180328-081906-039521', 'remain': 0.035, 'trade_price': 832740.0}
