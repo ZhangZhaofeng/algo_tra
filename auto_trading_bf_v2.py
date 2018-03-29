@@ -35,6 +35,8 @@ class AutoTrading:
         self.order_places = order_places # specific an exist order
         self.tradeamount = tradeamount # init trade amount only if order not exist
         self.position = 0.0 # remain position (btc)
+        if self.order_places['exist']:
+            self.position = self.order_places['remain']
 
     def trade_bitflyer_constoplimit(self, type, buysellprice, amount, slide = 100):
         product= 'BTC_JPY'
@@ -365,20 +367,20 @@ if __name__ == '__main__':
         predict.print_and_write('sell: %.0f , buy : %.0f' % (result[1], result[0]))
         sell = float(result[1])
         buy = float(result[0])
-        #adjust_result = autoTrading.bitf2qix(buy, sell)
-        #avg_open = autoTrading.get_open()
-        #oid = autoTrading.onTrick_trade(adjust_result[0], adjust_result[1], avg_open) # buy ,sell
         oid = autoTrading.onTrick_trade(buy, sell, slide=10)  # trade first time
+        if oid == -1 or oid == -2:
+            print('oid : %d'%oid)
+            break
         oid2 = autoTrading.detect_in_one_tunit(waiting_time, detect_fre, slide=20) # adjust the prices
-        #order = autoTrading.cancle_order(235147969)
-        #order = autoTrading.get_orderbyid(235147969)
-        print(oid)
-        print(oid2)
-        if oid == -1 or oid == -2 or oid2 == -1 or oid2 == -2:
+        if oid2 == -1 or oid2 == -2:
+            print('oid2 : %d' % oid2)
             break
         #print('wait 60 min')
         #time.sleep(3600)
         profits = autoTrading.get_profit()
         cur_jpy = profits[0]
         cur_btc = profits[1]
-        predict.print_and_write('Profit jpy: %s btc: %s' % (cur_jpy, cur_btc))
+        predict.print_and_write('Remaining jpy: %s btc: %s' % (cur_jpy, cur_btc))
+        predict.print_and_write('Trading jpy: %s btc: %s' % (str(autoTrading.tradeamount), str(autoTrading.position)))
+        predict.print_and_write('All jpy: %s btc: %s' % (str(float(cur_jpy)+ autoTrading.tradeamount), str(float(cur_btc) + autoTrading.position)))
+        predict.print_and_write('==============================================')

@@ -35,6 +35,9 @@ class AutoTrading:
         self.tradeamount = tradeamount # init trade amount only if order not exist
         self.position = 0.0 # remain position (btc)
 
+        if self.order_places['exist']:
+            self.position = self.order_places['remain']
+
     def trade_bitflyer_constoplimit(self, type, buysellprice, amount, slide = 100):
         product= 'BTC_JPY'
         print('trade bitflyer')
@@ -225,11 +228,11 @@ class AutoTrading:
 
 
 if __name__ == '__main__':
-    tradeamount0 = 29598
+    tradeamount0 = 29374
     if 0:
         order_places = {'exist' : False,'type' : '','id' : '','remain' : 0.0, 'trade_price' : ''}
     else:
-        order_places = {'exist': True, 'type': 'buy', 'id': 'JRF20180328-004942-115563', 'remain': 0.035, 'trade_price': 846725.0}
+        order_places = {'exist': True, 'type': 'sell', 'id': 'JRF20180328-081906-039521', 'remain': 0.035, 'trade_price': 832740.0}
     autoTrading = AutoTrading(holdflag=False, order_places=order_places, tradeamount=tradeamount0)
     prediction = predict.Predict()
     profits = autoTrading.get_profit()
