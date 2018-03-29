@@ -291,36 +291,6 @@ class AutoTrading:
 
         return(self.order_places['id'])
 
-            # if not filled ignore
-            # else: # not filled or partly filled
-            #     self.order_places['remain'] = self.cancle_order(self.order_places['id'])
-            #     self.order_places['exist'] = False
-            #     self.order_places['id'] = 0
-            #
-            #      # not filled
-            #     if self.order_places['type'] == 'buy': #
-            #         predict.print_and_write('Buy order not filled buy again')
-            #         self.holdflag = False
-            #         amount = self.tradeamount / buyprice # continue buy
-            #         if amount < 0.001:
-            #             amount = 0.001
-            #             #
-            #     else: # treat as sell succeed
-            #         predict.print_and_write('Sell order not filled sell again')
-            #         self.holdflag = True
-            #         amount = self.order_places['remain'] # continue sell
-            #         if amount < 0.001:
-            #             amount = 0.001
-            #
-            #     # maybe bug here cancelled but actually executed
-
-        # else do nothing
-        # else:
-        #     if self.holdflag:
-        #         amount = self.tradeamount / sellprice
-        #     else:
-        #         amount = self.tradeamount / buyprice
-
 
 
     def get_profit(self):
