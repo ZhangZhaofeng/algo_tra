@@ -347,9 +347,20 @@ class AutoTrading:
 
     def detect_in_one_tunit(self, waiting_time, detect_fre, price ,slide = 20):
         self.wave_times = 0
+        init_oclock =  int(time.strftime('%H:')[0:-1])
         for i in range(0, detect_fre):
+
             time.sleep(waiting_time / (detect_fre + 1))
-            predict.print_and_write('.')
+            cur_oclock =  int(time.strftime('%H:')[0:-1])
+            if cur_oclock != init_oclock: # if oclock changed regenerate the buy and sell price
+                result = prediction.publish_current_limit_price(periods="1H")
+                sell = float(result[1])
+                buy = float(result[0])
+                price = (sell + buy) /2
+                predict.print_and_write('Oclcok change from %d to %d, price changed to %f'%(init_oclock, cur_oclock, price))
+                init_oclock = cur_oclock
+            else:
+                predict.print_and_write('.')
             sell = price + self.order_places['slide']
             buy = price - self.order_places['slide']
             oid = autoTrading.detect_trade(buy, sell, slide)
@@ -363,10 +374,10 @@ class AutoTrading:
 if __name__ == '__main__':
     tradeamount0 = 3000
     waiting_time = 3600
-    detect_fre = 8
-    succeed = 0
-    failed = 0
-    wait = 0
+    detect_fre = 8 # detection frequency
+    succeed = 0 # succeed times
+    failed = 0 # failed times
+    wait = 0 # waiting times
     if 1:
         order_places = {'exist' : False,'type' : '','id' : '','remain' : 0.0, 'trade_price' : 0.0}
     else: # if you want to recover the prcessing , input the detail of your order in following and change 'if 1' to 'if 0'
@@ -395,8 +406,8 @@ if __name__ == '__main__':
         if oid == -1 or oid == -2:
             print('oid : %d'%oid)
             break
-        price = (buy + sell) / 2 # price @ gradient = 0.0
-        oid2 = autoTrading.detect_in_one_tunit(waiting_time, detect_fre, price, slide=20) # adjust the prices
+        price = (buy + sell) / 2 # price of gradient = 0.0
+        oid2 = autoTrading.detect_in_one_tunit(waiting_time, detect_fre, price, slide=20) # detection program in one time unit
         if oid2 == -1 or oid2 == -2:
             print('oid2 : %d' % oid2)
             break
