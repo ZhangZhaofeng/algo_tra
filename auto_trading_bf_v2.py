@@ -39,7 +39,7 @@ class AutoTrading:
             self.position = self.order_places['remain']
 
     def trade_bitflyer_constoplimit(self, type, buysellprice, amount, slide = 100):
-        product= 'BTC_JPY'
+        product= 'FX_BTC_JPY'
         print('trade bitflyer')
         if type == 'BUY' or type == 'buy':
             # order = self.quoinex_api.create_market_buy(product_id=5, quantity=str(amount), price_range=str(buysellprice))
@@ -58,7 +58,7 @@ class AutoTrading:
         #order = self.quoinex_api.get_orders()
         #order = self.quoinex_api.get_orders(status, limit)
         #ACTIVE CANCELED
-        product = 'BTC_JPY'
+        product = 'FX_BTC_JPY'
         if status != '':
             order = self.bitflyer_api.getparentorders(product_code=product, parent_order_state=status)
         else:
@@ -66,7 +66,7 @@ class AutoTrading:
         return (order)
 
     def get_orderbyid(self, id):
-        product = 'BTC_JPY'
+        product = 'FX_BTC_JPY'
         i = 20
         while i > 0:
             try:
@@ -86,7 +86,7 @@ class AutoTrading:
         return({})
 
     def cancle_order(self, id):
-        product = 'BTC_JPY'
+        product = 'FX_BTC_JPY'
         i = 20
         while i>0:
             try:
@@ -117,9 +117,10 @@ class AutoTrading:
         sellprice = float(sellprice)
 
 
-        if self.order_places['exist']: # if there is a order detect if it filled or not yet
+        if self.order_places['exist']: # There is an order existed in last time
 
             placed = self.get_orderbyid(self.order_places['id'])
+            # detecting the order and get the information of this order
             if self.order_places['type'] == 'buy':
                 self.position += placed['executed_size']
                 self.tradeamount -= placed['executed_size'] * self.order_places['trade_price']
@@ -129,7 +130,6 @@ class AutoTrading:
 
             if self.order_places['remain'] - placed['executed_size'] < 0.001  : # if filled
             #if placed['status'] == 'filled':
-                #avg_price = float(placed['average_price'])
                 if self.order_places['type'] == 'buy':
                     predict.print_and_write('Buy order filled')
                     self.holdflag = True
@@ -147,23 +147,38 @@ class AutoTrading:
 
             else: # not filled or partly filled
                 self.order_places['remain'] = self.cancle_order(self.order_places['id'])
+                self.checkposition(placed)
+                # if a order is cancelled, but some trading happened between
+                # detection and cancelling, the result may cause bug
+                # it is necessary to check the cancel result and detection result and fix them
                 self.order_places['exist'] = False
                 self.order_places['id'] = 0
+                predict.print_and_write('remain:%f'%(self.order_places['remain']))
 
-                 # not filled
-                if self.order_places['type'] == 'buy': #
-                    predict.print_and_write('Buy order not filled buy again')
-                    self.holdflag = False
-                    amount = self.tradeamount / buyprice # continue buy
-                    if amount < 0.001:
-                        amount = 0.001
+                if self.order_places['remain'] < 0.001: # if filled
+                    if self.order_places['type'] == 'buy':
+                        predict.print_and_write('Buy order filled')
+                        self.holdflag = True
+                        amount = self.position
+                    else:
+                        predict.print_and_write('Sell order filled')
+                        self.holdflag = False
+                        amount = self.tradeamount / buyprice
+
+                else: # not filled
+                    if self.order_places['type'] == 'buy': #
+                        predict.print_and_write('Buy order not filled buy again')
+                        self.holdflag = False
+                        amount = self.tradeamount / buyprice # continue buy
+                        if amount < 0.001:
+                            amount = 0.001
                         #
-                else: # treat as sell succeed
-                    predict.print_and_write('Sell order not filled sell again')
-                    self.holdflag = True
-                    amount = self.order_places['remain'] # continue sell
-                    if amount < 0.001:
-                        amount = 0.001
+                    else: # treat as sell succeed
+                        predict.print_and_write('Sell order not filled sell again')
+                        self.holdflag = True
+                        amount = self.order_places['remain'] # continue sell
+                        if amount < 0.001:
+                            amount = 0.001
 
                 # maybe bug here cancelled but actually executed
 
@@ -212,15 +227,25 @@ class AutoTrading:
 
         return(-2) # try too many times stop trading
 
+    def checkposition(self,placed):
+        amount = placed['size'] - placed['executed_size'] - self.order_places['remain']
+        if abs(amount) > 0.001:
+            predict.print_and_write('Trading occured during detecing and cancelling')
+            if self.order_places['type'] == 'buy':
+                predict.print_and_write('%f has been brought'%amount)
+                self.position += amount
+                self.tradeamount -= amount * self.order_places['trade_price']
+            else:
+                predict.print_and_write('%f has been sold' % amount)
+                self.position -= amount
+                self.tradeamount += amount * self.order_places['trade_price']
+
 
     def detect_trade(self, buyprice, sellprice, slide = 10):
 
         buyprice = float(buyprice)
         sellprice = float(sellprice)
-
-
         if self.order_places['exist']: # if there is a order detect if it filled or not yet
-
             placed = self.get_orderbyid(self.order_places['id'])
             if self.order_places['type'] == 'buy':
                 self.position += placed['executed_size']
@@ -231,13 +256,10 @@ class AutoTrading:
 
             if self.order_places['remain'] - placed['executed_size'] < 0.001  : # if filled
             #if placed['status'] == 'filled':
-                #avg_price = float(placed['average_price'])
                 if self.order_places['type'] == 'buy':
                     predict.print_and_write('Buy order filled in a time unit')
                     self.holdflag = True
                     amount = self.position
-                    #amount = trademount / sellprice
-                    #amount = self.order_places['remain']
                 else:
                     predict.print_and_write('Sell order filled in a time unit')
                     self.holdflag = False
@@ -288,13 +310,10 @@ class AutoTrading:
                         time.sleep(5)
                         try_times -= 1
                 return (-2)
-
         return(self.order_places['id'])
 
-
-
     def get_profit(self):
-        balances = self.bitflyer_api.getbalance(product_code="BTC_JPY")
+        balances = self.bitflyer_api.getbalance(product_code="FX_BTC_JPY")
         jpy_avai = 0.0
         btc_avai = 0.0
         for balance in balances:
@@ -304,12 +323,18 @@ class AutoTrading:
                 btc_avai = float(balance['available'])
         return ([jpy_avai, btc_avai])
 
-    def detect_in_one_tunit(self, waiting_time, detect_fre, slide = 20):
+    def get_collateral(self):
+        balances = self.bitflyer_api.getcollateral()
+        collateral = balances['collateral']
+        openpnl = balances['open_position_pnl']
+        return([collateral,openpnl])
+
+    def detect_in_one_tunit(self, waiting_time, detect_fre, price ,slide = 20):
         for i in range(0, detect_fre):
             time.sleep(waiting_time / (detect_fre + 1))
-            predict.print_and_write('Detect small wave in one time unit')
-            sell = self.order_places['trade_price'] + self.order_places['slide']
-            buy = self.order_places['trade_price'] - self.order_places['slide']
+            predict.print_and_write('.')
+            sell = price + self.order_places['slide']
+            buy = price - self.order_places['slide']
             oid = autoTrading.detect_trade(buy, sell, slide)
             if oid == -1 or oid == -2:
                 print(oid)
@@ -318,39 +343,49 @@ class AutoTrading:
         time.sleep(waiting_time / (detect_fre + 1))
 
 if __name__ == '__main__':
-    tradeamount0 = 1000
+    tradeamount0 = 3000
     waiting_time = 3600
     detect_fre = 8
     if 1:
-        order_places = {'exist' : False,'type' : '','id' : '','remain' : 0.0, 'trade_price' : ''}
+        order_places = {'exist' : False,'type' : '','id' : '','remain' : 0.0, 'trade_price' : 0.0}
     else: # if you want to recover the prcessing , input the detail of your order in following and change 'if 1' to 'if 0'
         order_places = {'exist': True, 'type': 'buy', 'id': 'JRF20180328-004942-115563', 'remain': 0.035, 'trade_price': 846725.0, 'slide': 0.0}
     autoTrading = AutoTrading(holdflag=False, order_places=order_places, tradeamount=tradeamount0)
     prediction = predict.Predict()
-    profits = autoTrading.get_profit()
-    init_jpy = profits[0]
-    init_btc = profits[1]
-    predict.print_and_write('Profit jpy: %s btc: %s'%(init_jpy, init_btc))
-
+    collateral = autoTrading.get_collateral()
+    predict.print_and_write('Collateral: %f Profit: %f ' % (collateral[0], collateral[1]))
+    tradingtimes = 0
     while 1:
+        if tradingtimes > 0: # get the buy and sell price of last hour
+            sell0 = sell
+            buy0 = buy
+            order0 = autoTrading.order_places['trade_price']
+            position0 = autoTrading.position
+            tradeamount0 = autoTrading.tradeamount
         result = prediction.publish_current_limit_price(periods="1H")
-        predict.print_and_write('sell: %.0f , buy : %.0f' % (result[1], result[0]))
+        #predict.print_and_write('sell: %.0f , buy : %.0f' % (result[1], result[0]))
         sell = float(result[1])
         buy = float(result[0])
+        close = float(result[2]) # the close price of last hour
         oid = autoTrading.onTrick_trade(buy, sell, slide=10)  # trade first time
         if oid == -1 or oid == -2:
             print('oid : %d'%oid)
             break
-        oid2 = autoTrading.detect_in_one_tunit(waiting_time, detect_fre, slide=20) # adjust the prices
+        price = (buy + sell) / 2 # price @ gradient = 0.0
+        oid2 = autoTrading.detect_in_one_tunit(waiting_time, detect_fre, price, slide=20) # adjust the prices
         if oid2 == -1 or oid2 == -2:
             print('oid2 : %d' % oid2)
             break
-        #print('wait 60 min')
-        #time.sleep(3600)
-        profits = autoTrading.get_profit()
-        cur_jpy = profits[0]
-        cur_btc = profits[1]
-        predict.print_and_write('Remaining jpy: %s btc: %s' % (cur_jpy, cur_btc))
-        predict.print_and_write('Trading jpy: %s btc: %s' % (str(autoTrading.tradeamount), str(autoTrading.position)))
-        predict.print_and_write('All jpy: %s btc: %s' % (str(float(cur_jpy)+ autoTrading.tradeamount), str(float(cur_btc) + autoTrading.position)))
+        collateral = autoTrading.get_collateral()
+
+        # record following thing of last 2 hour:
+        # close price, buy price, sell price, btc remain, jpy remain
+        if autoTrading.holdflag and tradingtimes > 0:
+            predict.print_and_write('Hold: close: %f, trade: %f, buy: %f sell: %f BTC: %f, JPY %f'%(close, order0, buy0, sell0, position0, tradeamount0))
+        elif autoTrading.holdflag==False and tradingtimes > 0:
+            predict.print_and_write('Not hold: close: %f, trade: %f, buy: %f sell: %f BTC: %f, JPY %f' % (close, order0, buy0, sell0, position0, tradeamount0))
+        predict.print_and_write('Collateral: %f Profit: %f '%(collateral[0], collateral[1]))
+        #predict.print_and_write('Trading jpy: %s btc: %s' % (str(autoTrading.tradeamount), str(autoTrading.position)))
+        #predict.print_and_write('All jpy: %s btc: %s' % (str(float(cur_jpy)+ autoTrading.tradeamount), str(float(cur_btc) + autoTrading.position)))
         predict.print_and_write('==============================================')
+        tradingtimes +=1
