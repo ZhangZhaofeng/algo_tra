@@ -26,6 +26,8 @@ class AutoTrading:
         }
     tradeamount = 1000
     position = 0
+    wave_times = 0
+    everhold = False
 
 
     def __init__(self, holdflag = False, order_places = {'exist': False, 'type': '','id': 0,'remain' : 0.0, 'trade_price' : '', 'slide': 0.0}, tradeamount = 1000, position = 0.0):
@@ -37,6 +39,15 @@ class AutoTrading:
         self.position = 0.0 # remain position (btc)
         if self.order_places['exist']:
             self.position = self.order_places['remain']
+        self.initeverhold()
+
+    def initeverhold(self):
+        if self.holdflag == True:
+            self.everhold = True
+        else:
+            self.everhold = False
+
+
 
     def trade_bitflyer_constoplimit(self, type, buysellprice, amount, slide = 100):
         product= 'FX_BTC_JPY'
@@ -133,6 +144,7 @@ class AutoTrading:
                 if self.order_places['type'] == 'buy':
                     predict.print_and_write('Buy order filled')
                     self.holdflag = True
+                    self.everhold = True
                     amount = self.position
                     #amount = trademount / sellprice
                     #amount = self.order_places['remain']
@@ -159,6 +171,7 @@ class AutoTrading:
                     if self.order_places['type'] == 'buy':
                         predict.print_and_write('Buy order filled')
                         self.holdflag = True
+                        self.everhold = True
                         amount = self.position
                     else:
                         predict.print_and_write('Sell order filled')
@@ -176,6 +189,7 @@ class AutoTrading:
                     else: # treat as sell succeed
                         predict.print_and_write('Sell order not filled sell again')
                         self.holdflag = True
+                        self.everhold = True
                         amount = self.order_places['remain'] # continue sell
                         if amount < 0.001:
                             amount = 0.001
@@ -259,6 +273,7 @@ class AutoTrading:
                 if self.order_places['type'] == 'buy':
                     predict.print_and_write('Buy order filled in a time unit')
                     self.holdflag = True
+                    self.everhold = True
                     amount = self.position
                 else:
                     predict.print_and_write('Sell order filled in a time unit')
@@ -304,6 +319,7 @@ class AutoTrading:
                         predict.print_and_write('order: id %s, amount: %s, type: %s, price: %s' % (
                         new_order['parent_order_acceptance_id'], str(amount), side,
                         str(self.order_places['trade_price'])))
+                        self.wave_times +=1
                         return (self.order_places['id'])
                     except Exception:
                         print('Error! Try again')
@@ -330,6 +346,7 @@ class AutoTrading:
         return([collateral,openpnl])
 
     def detect_in_one_tunit(self, waiting_time, detect_fre, price ,slide = 20):
+        self.wave_times = 0
         for i in range(0, detect_fre):
             time.sleep(waiting_time / (detect_fre + 1))
             predict.print_and_write('.')
@@ -338,14 +355,18 @@ class AutoTrading:
             oid = autoTrading.detect_trade(buy, sell, slide)
             if oid == -1 or oid == -2:
                 print(oid)
-                break
+                return(oid)
             #predict.print_and_write('Detect finished, waiting for another detection')
         time.sleep(waiting_time / (detect_fre + 1))
+        return(self.wave_times)
 
 if __name__ == '__main__':
     tradeamount0 = 3000
     waiting_time = 3600
     detect_fre = 8
+    succeed = 0
+    failed = 0
+    wait = 0
     if 1:
         order_places = {'exist' : False,'type' : '','id' : '','remain' : 0.0, 'trade_price' : 0.0}
     else: # if you want to recover the prcessing , input the detail of your order in following and change 'if 1' to 'if 0'
@@ -362,11 +383,14 @@ if __name__ == '__main__':
             order0 = autoTrading.order_places['trade_price']
             position0 = autoTrading.position
             tradeamount0 = autoTrading.tradeamount
+            everholdflag = autoTrading.everhold
+            holdflag0 = autoTrading.holdflag
         result = prediction.publish_current_limit_price(periods="1H")
-        #predict.print_and_write('sell: %.0f , buy : %.0f' % (result[1], result[0]))
+        predict.print_and_write('sell: %.0f , buy : %.0f' % (result[1], result[0]))
         sell = float(result[1])
         buy = float(result[0])
         close = float(result[2]) # the close price of last hour
+        autoTrading.initeverhold()
         oid = autoTrading.onTrick_trade(buy, sell, slide=10)  # trade first time
         if oid == -1 or oid == -2:
             print('oid : %d'%oid)
@@ -380,11 +404,27 @@ if __name__ == '__main__':
 
         # record following thing of last 2 hour:
         # close price, buy price, sell price, btc remain, jpy remain
-        if autoTrading.holdflag and tradingtimes > 0:
-            predict.print_and_write('Hold: close: %f, trade: %f, buy: %f sell: %f BTC: %f, JPY %f'%(close, order0, buy0, sell0, position0, tradeamount0))
-        elif autoTrading.holdflag==False and tradingtimes > 0:
-            predict.print_and_write('Not hold: close: %f, trade: %f, buy: %f sell: %f BTC: %f, JPY %f' % (close, order0, buy0, sell0, position0, tradeamount0))
+        if tradingtimes > 0:
+            if holdflag0 and tradingtimes > 0:
+                predict.print_and_write('Hold: close: %f, trade: %f, buy: %f sell: %f BTC: %f, JPY %f'%(close, order0, buy0, sell0, position0, tradeamount0))
+            elif holdflag0==False and tradingtimes > 0:
+                predict.print_and_write('Not hold: close: %f, trade: %f, buy: %f sell: %f BTC: %f, JPY %f' % (close, order0, buy0, sell0, position0, tradeamount0))
+            if everholdflag:
+                if close >= sell0 and holdflag0:
+                    succeed += 1
+                    predict.print_and_write('succeed:%d'%succeed)
+                elif close <= sell0 and holdflag0 == False:
+                    succeed += 1
+                    predict.print_and_write('succeed:%d' % succeed)
+                else:
+                    failed += 1
+                    predict.print_and_write('failed:%d' % failed)
+            else:
+                wait += 1
+                predict.print_and_write('wait:%d' % wait)
+
         predict.print_and_write('Collateral: %f Profit: %f '%(collateral[0], collateral[1]))
+        predict.print_and_write('Operations in a time unit: %d'%(oid2))
         #predict.print_and_write('Trading jpy: %s btc: %s' % (str(autoTrading.tradeamount), str(autoTrading.position)))
         #predict.print_and_write('All jpy: %s btc: %s' % (str(float(cur_jpy)+ autoTrading.tradeamount), str(float(cur_btc) + autoTrading.position)))
         predict.print_and_write('==============================================')
