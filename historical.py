@@ -18,7 +18,7 @@ class charts:
     def time_array_converter(self, unix_time_stamp_array):
         time_stamp_array = []
         for a in unix_time_stamp_array:
-            print(a[0])
+            #print(a[0])
             x = dt.datetime.fromtimestamp(a[0])
             # print(x)
             time_stamp_array.append([x])
@@ -51,7 +51,7 @@ class charts:
         assert (startTimestamp < endTimestamp)
         query = {"periods": periods, "after": str(int(startTimestamp)), "before": str(int(endTimestamp))}
         res = \
-        json.loads(requests.get("https://api.cryptowat.ch/markets/bitflyer/btcjpy/ohlc", params=query).text)["result"][
+        json.loads(requests.get("https://api.cryptowat.ch/markets/bitflyer/btcfxjpy/ohlc", params=query).text)["result"][
             periods]
         res = np.array(res)
         time_stamp = res[:, 0].reshape(len(res), 1)
@@ -78,22 +78,22 @@ class charts:
         return int(dt.datetime.now().timestamp())
 
     def get_price_array_till_finaltime(self,final_unixtime_stamp=time.time(), num=100, periods="1m", converter=True):
-        print(periods)
-        print(int(self.period_converter(periods)))
+        #print(periods)
+        #print(int(self.period_converter(periods)))
         endTimestamp = final_unixtime_stamp
         startTimestamp = endTimestamp-int(self.period_converter(periods))*num
         (time_stamp, open_price, high_price, low_price, close_price)=\
             self.get_price_array_period(startTimestamp,endTimestamp, periods, converter)
         self.save_chart_to_csv(time_stamp, open_price, high_price, low_price, close_price)
 
-        print(np.shape(close_price))
-        print(close_price.T)
-        print(np.shape(close_price.T))
+        #print(np.shape(close_price))
+        #print(close_price.T)
+        #print(np.shape(close_price.T))
 
         return (time_stamp, open_price, high_price, low_price, close_price)
 
     def turn_vec_to_array(self,mat):
-        print(type(mat))
+        #print(type(mat))
 
         b=[]
         for a in mat:
