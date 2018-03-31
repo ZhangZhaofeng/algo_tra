@@ -161,8 +161,8 @@ class GMMA:
         all = np.c_[
             time_stamp, open_price, high_price, low_price, close_price, ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60]
 
-        print(all)
-        print("all")
+        #print(all)
+        #print("all")
         cwd = os.getcwd()
         data.to_csv(
             cwd + ".csv",
@@ -182,7 +182,7 @@ class GMMA:
         buyprice = self.get_buyprice(ema_latest_hour.astype(float), open_curr.astype(float), periods)
         print("Current grad_weighted= %s" %b[0])
         print([time_stamp[len(time_stamp) - 1], open_curr[0], buyprice[0], sellprice[0]])
-        return (buyprice, sellprice, grad_weighted)
+        return (buyprice, sellprice, close_price[-1] ,grad_weighted)
 
     def simulate(self, num=100, periods="1m"):
         (time_stamp, open_price, high_price, low_price, close_price) = self.btc_charts.get_price_array_till_finaltime(
@@ -209,17 +209,17 @@ class GMMA:
             sell_price = self.get_sellprice(ema[t - 1], all[t][1], periods)
             buy_price = self.get_buyprice(ema[t - 1], all[t][1], periods)
 
-            print(ema[t - 1])
+            #print(ema[t - 1])
             if hold == False:
                 # if all[t][17] > 0.1 and all[t][17] < 1.3 and all[t][18] > 0.0 and div_ratio[t][0]<1.05 :
-                if all[t][2] > buy_price and all[t][1] < buy_price:  # and #all[t-1][18] > 0.0:  #high price is higher than buy_price
+                if all[t][2] > buy_price :  # and #all[t-1][18] > 0.0:  #high price is higher than buy_price
                     hold = True
                     btc = cash / buy_price
                     cash = 0.
                     buy_times += 1
             elif hold == True:
                 assert (all[t][1] >= sell_price)
-                if all[t][3] < sell_price and all[t][1] > sell_price:  # low price is lower than sell_price
+                if all[t][3] < sell_price :  # low price is lower than sell_price
                     hold = False
                     cash = sell_price * btc
                     btc = 0.
@@ -231,7 +231,7 @@ class GMMA:
             amount[t][2] = cash
             amount[t][3] = btc
             amount[t][4] = value
-            print("value: %s" % value)
+            #print("value: %s" % value)
 
         all = np.c_[
             time_stamp, open_price, high_price, low_price, close_price, ema3, ema5, ema8, ema10, ema12, ema15, ema30, ema35, ema40, ema45, ema50, ema60, grad_w, amount]
