@@ -231,6 +231,7 @@ class AutoTrading:
                 self.order_places['slide'] = slide
 
                 predict.print_and_write('order: id %s, amount: %s, type: %s, price: %s'%(new_order['parent_order_acceptance_id'], str(amount), side, str(self.order_places['trade_price'])) )
+                self.wave_times += 1
                 return(self.order_places['id'])
             except Exception:
                 print('Error! Try again')
@@ -255,6 +256,7 @@ class AutoTrading:
                 self.tradeamount += amount * self.order_places['trade_price']
 
 
+
     def detect_trade(self, buyprice, sellprice, slide = 10):
 
         buyprice = float(buyprice)
@@ -271,12 +273,12 @@ class AutoTrading:
             if self.order_places['remain'] - placed['executed_size'] < 0.001  : # if filled
             #if placed['status'] == 'filled':
                 if self.order_places['type'] == 'buy':
-                    predict.print_and_write('Buy order filled in a time unit')
+                    predict.print_and_write('Buy order filled in this time unit')
                     self.holdflag = True
                     self.everhold = True
                     amount = self.position
                 else:
-                    predict.print_and_write('Sell order filled in a time unit')
+                    predict.print_and_write('Sell order filled in this time unit')
                     self.holdflag = False
                     amount = self.tradeamount / buyprice
 
@@ -326,6 +328,7 @@ class AutoTrading:
                         time.sleep(5)
                         try_times -= 1
                 return (-2)
+
         return(self.order_places['id'])
 
     def get_profit(self):
@@ -352,18 +355,21 @@ class AutoTrading:
 
             time.sleep(waiting_time / (detect_fre + 1))
             cur_oclock =  int(time.strftime('%H:')[0:-1])
-            if cur_oclock != init_oclock: # if oclock changed regenerate the buy and sell price
+            if cur_oclock != init_oclock: # if oclock changed regenerate the buy and sell price and retrading
                 result = prediction.publish_current_limit_price(periods="1H")
                 sell = float(result[1])
                 buy = float(result[0])
                 price = (sell + buy) /2
-                predict.print_and_write('Oclcok change from %d to %d, price changed to %f'%(init_oclock, cur_oclock, price))
+                #sell = sell + self.order_places['slide']
+                #buy = buy - self.order_places['slide']
+                predict.print_and_write('Oclcok change from %d to %d, price changed to buy %f, sell %f'%(init_oclock, cur_oclock, buy, sell))
                 init_oclock = cur_oclock
+                oid = autoTrading.onTrick_trade(buy, sell, slide)
             else:
                 predict.print_and_write('.')
-            sell = price + self.order_places['slide']
-            buy = price - self.order_places['slide']
-            oid = autoTrading.detect_trade(buy, sell, slide)
+                sell = price + self.order_places['slide']
+                buy = price - self.order_places['slide']
+                oid = autoTrading.detect_trade(buy, sell, slide)
             if oid == -1 or oid == -2:
                 print(oid)
                 return(oid)
@@ -401,7 +407,7 @@ if __name__ == '__main__':
         sell = float(result[1])
         buy = float(result[0])
         close = float(result[2]) # the close price of last hour
-        autoTrading.initeverhold()
+        autoTrading.initeverhold() # initinal the ever hold flag before each iteration
         oid = autoTrading.onTrick_trade(buy, sell, slide=10)  # trade first time
         if oid == -1 or oid == -2:
             print('oid : %d'%oid)
