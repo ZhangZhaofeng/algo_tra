@@ -102,7 +102,7 @@ class AutoTrading:
         while i>0:
             try:
                 statue = self.bitflyer_api.cancelparentorder(product_code=product, parent_order_acceptance_id=id)
-                time.sleep(5)
+                time.sleep(10)
                 order = self.get_orderbyid(id)
                 child_order = self.bitflyer_api.getchildorders(product_code=product, parent_order_id =order['parent_order_id'])
                 if child_order != []:
@@ -112,15 +112,19 @@ class AutoTrading:
                     remain_amount = float(order['cancel_size'])
                     return(remain_amount)
                 else:
-                    return(0)
+                    i -= 1
+                    print('Try again cancelling')
+                    continue
             except Exception:
                 order = self.get_orderbyid(id)
                 if order['parent_order_state'] == 'COMPLETED':
                     print('Executed before cancelling')
                     return(0.0)
                 time.sleep(5)
-                print('Try again cancelling')
+                print('Exception Try again cancelling')
                 i -= 1
+        predict.print_and_write('Cancel failed')
+        return([])
 
     def onTrick_trade(self, buyprice, sellprice, slide = 10):
 
@@ -235,6 +239,7 @@ class AutoTrading:
                 return(self.order_places['id'])
             except Exception:
                 print('Error! Try again')
+                predict.print_and_write(new_order)
                 time.sleep(5)
                 try_times -= 1
 
@@ -243,6 +248,16 @@ class AutoTrading:
         return(-2) # try too many times stop trading
 
     def checkposition(self,placed):
+        order0 = self.get_orderbyid(self.order_places['id'])
+        x = order0['cancel_size']
+        if abs(x - self.order_places['remain']) > 0.001:
+            predict.print_and_write('order check failed')
+
+        # position0 = self.bitflyer_api.getcollateral()
+        # if abs(self.position - position0['open_position_pnl']) > 0.001:
+        #     predict.print_and_write('position check failed')
+
+
         amount = placed['size'] - placed['executed_size'] - self.order_places['remain']
         if abs(amount) > 0.001:
             predict.print_and_write('Trading occured during detecing and cancelling')
@@ -325,6 +340,7 @@ class AutoTrading:
                         return (self.order_places['id'])
                     except Exception:
                         print('Error! Try again')
+                        predict.print_and_write(new_order)
                         time.sleep(5)
                         try_times -= 1
                 return (-2)
@@ -379,8 +395,8 @@ class AutoTrading:
 
 if __name__ == '__main__':
     tradeamount0 = 3000
-    waiting_time = 3600
-    detect_fre = 8 # detection frequency
+    waiting_time = 60
+    detect_fre = 2 # detection frequency
     succeed = 0 # succeed times
     failed = 0 # failed times
     wait = 0 # waiting times
@@ -422,9 +438,9 @@ if __name__ == '__main__':
         # record following thing of last 2 hour:
         # close price, buy price, sell price, btc remain, jpy remain
         if tradingtimes > 0:
-            if holdflag0 and tradingtimes > 0:
+            if holdflag0 :
                 predict.print_and_write('Hold: close: %f, trade: %f, buy: %f sell: %f BTC: %f, JPY %f'%(close, order0, buy0, sell0, position0, tradeamount0))
-            elif holdflag0==False and tradingtimes > 0:
+            elif holdflag0==False :
                 predict.print_and_write('Not hold: close: %f, trade: %f, buy: %f sell: %f BTC: %f, JPY %f' % (close, order0, buy0, sell0, position0, tradeamount0))
             if everholdflag:
                 if close >= sell0 and holdflag0:
