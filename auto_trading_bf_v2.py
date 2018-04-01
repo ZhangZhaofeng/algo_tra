@@ -395,8 +395,8 @@ class AutoTrading:
 
 if __name__ == '__main__':
     tradeamount0 = 3000
-    waiting_time = 60
-    detect_fre = 2 # detection frequency
+    waiting_time = 3600
+    detect_fre = 8 # detection frequency
     succeed = 0 # succeed times
     failed = 0 # failed times
     wait = 0 # waiting times
