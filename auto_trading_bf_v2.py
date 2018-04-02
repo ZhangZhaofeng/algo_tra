@@ -371,13 +371,17 @@ class AutoTrading:
 
             time.sleep(waiting_time / (detect_fre + 1))
             cur_oclock =  int(time.strftime('%H:')[0:-1])
+            cur_min = int(time.strftime('%M:')[0:-1])
+            if (cur_oclock == 4 and cur_min >= 0 and cur_min <= 11) or (cur_oclock == 3 and cur_min >= 59):
+                predict.print_and_write('Server maintance')
+                continue
             if cur_oclock != init_oclock: # if oclock changed regenerate the buy and sell price and retrading
                 result = prediction.publish_current_limit_price(periods="1H")
                 sell = float(result[1])
                 buy = float(result[0])
                 price = (sell + buy) /2
-                #sell = sell + self.order_places['slide']
-                #buy = buy - self.order_places['slide']
+                #sell = price + self.order_places['slide']
+                #buy = price - self.order_places['slide']
                 predict.print_and_write('Oclcok change from %d to %d, price changed to buy %f, sell %f'%(init_oclock, cur_oclock, buy, sell))
                 init_oclock = cur_oclock
                 oid = autoTrading.onTrick_trade(buy, sell, slide)
