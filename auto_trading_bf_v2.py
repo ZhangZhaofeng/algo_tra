@@ -247,11 +247,27 @@ class AutoTrading:
 
         return(-2) # try too many times stop trading
 
+    def checkP(self):
+        p = self.bitflyer_api.getpositions(product_code = 'FX_BTC_JPY')
+        if isinstance(p, list):
+            for i in p:
+                if i['side'] == self.order_places['type'] and abs (i['size'] - self.position) < 0.001:
+                    predict.print_and_write('Real position is same as program one')
+                    return(0)
+        if isinstance(p, dict):
+            if self.position < 0.001:
+                predict.print_and_write('Real position is same as program one')
+                return (0)
+        predict.print_and_write('Position is not find')
+        return(p)
+
+
     def checkposition(self,placed):
         order0 = self.get_orderbyid(self.order_places['id'])
         x = order0['cancel_size']
         if abs(x - self.order_places['remain']) > 0.001:
             predict.print_and_write('order check failed')
+
 
         # position0 = self.bitflyer_api.getcollateral()
         # if abs(self.position - position0['open_position_pnl']) > 0.001:
@@ -266,7 +282,7 @@ class AutoTrading:
                 self.position += amount
                 self.tradeamount -= amount * self.order_places['trade_price']
             else:
-                predict.print_and_write('%f has been sold' % amount)
+                predict.print_and_write('%f has been sold'%amount)
                 self.position -= amount
                 self.tradeamount += amount * self.order_places['trade_price']
 
