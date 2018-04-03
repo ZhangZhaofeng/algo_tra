@@ -1,4 +1,3 @@
-
 from tradingapis.bitflyer_api import pybitflyer
 from tradingapis.bitbank_api import public_api, private_api
 from tradingapis.zaif_api.impl import ZaifPublicApi, ZaifTradeApi
@@ -9,7 +8,33 @@ import time
 import copy
 import predict
 
+from timeit import Timer
+from email.mime.text import MIMEText
+from email.utils import formatdate
+import smtplib
 
+class SendMail:
+
+    def __init__(self,address,username,passwd ):
+        self.address = address
+        self.username = username
+        self.passwd = passwd
+        self.s = smtplib.SMTP('smtp.gmail.com', 587)
+        self.from_add = 'goozzfgle@gmail.com'
+        self.connect_mail_server()
+
+    def connect_mail_server(self):
+        try:
+            if self.s.ehlo_or_helo_if_needed():
+                self.s.ehlo()
+            self.s.starttls()
+            self.s.ehlo()
+            self.s.login(self.username, self.passwd)
+            return 0
+        except smtplib.SMTPNotSupportedError:
+            self.s.login(self.username, self.passwd)
+            return 0
+        return 1
 
 
 class AutoTrading:
@@ -108,7 +133,7 @@ class AutoTrading:
                 if child_order != []:
                     self.bitflyer_api.cancelchildorder(product_code=product, child_order_id=child_order['child_order_id'])
                 if order['parent_order_state'] == 'CANCELED':
-                    print('Order cancelled')
+                    predict.print_and_write('Order cancelled')
                     remain_amount = float(order['cancel_size'])
                     return(remain_amount)
                 else:
@@ -123,7 +148,8 @@ class AutoTrading:
                 time.sleep(5)
                 print('Exception Try again cancelling')
                 i -= 1
-        predict.print_and_write('Cancel failed')
+        predict.print_and_write('Cancel order failed')
+        self.sendamail('Cancel order failed','cancel failed : id %s'%(id))
         return([])
 
     def onTrick_trade(self, buyprice, sellprice, slide = 10):
@@ -256,17 +282,25 @@ class AutoTrading:
                     return(0)
         if isinstance(p, dict):
             if self.position < 0.001:
-                predict.print_and_write('Real position is same as program one')
+                predict.print_and_write('Position not exist')
                 return (0)
-        predict.print_and_write('Position is not find')
+        predict.print_and_write('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+        str = 'Position is unusual. Check!!! position :%f, program: %f'%(i['size'],self.position)
+        predict.print_and_write(str)
+        self.sendamail('position check failed', str)
+        predict.print_and_write('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
         return(p)
 
 
     def checkposition(self,placed):
+        time.sleep(20)
         order0 = self.get_orderbyid(self.order_places['id'])
         x = order0['cancel_size']
         if abs(x - self.order_places['remain']) > 0.001:
-            predict.print_and_write('order check failed')
+            str = 'Order is unusual. Check!!! cancel size :%f, remain: %f' % (x, self.order_places['remain'])
+            predict.print_and_write(str)
+            self.sendamail('order check failed', str)
+        self.checkP()
 
 
         # position0 = self.bitflyer_api.getcollateral()
@@ -412,6 +446,22 @@ class AutoTrading:
             #predict.print_and_write('Detect finished, waiting for another detection')
         time.sleep(waiting_time / (detect_fre + 1))
         return(self.wave_times)
+
+    def sendamail(self, title ,str):
+        address = 'goozzfgle@gmail.com'  # change the reciver e-mail address to yours
+        username = 'goozzfgle@gmail.com'
+        paswd = 'google871225'
+
+        mail_str = '%s %s' % (str, formatdate(None, True, None))
+        sender = SendMail(address, username, paswd)
+        msg = MIMEText(mail_str)
+        msg['Subject'] = title
+        msg['From'] = username
+        msg['To'] = address
+        msg['Date'] = formatdate()
+        sender.send_email(address, msg.as_string())
+
+
 
 if __name__ == '__main__':
     tradeamount0 = 3000
