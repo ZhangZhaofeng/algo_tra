@@ -36,6 +36,14 @@ class SendMail:
             return 0
         return 1
 
+    def send_email(self, toaddress ,mesage):
+        self.connect_mail_server()
+        try:
+            self.s.sendmail(self.from_add, toaddress, mesage)
+            print('Send a mail to %s' % (toaddress))
+        except smtplib.SMTPDataError:
+            print('Can not send a mail, maybe reach the daily limition')
+
 
 class AutoTrading:
     currency_jpy = 0 # jpy btc
@@ -77,15 +85,16 @@ class AutoTrading:
     def trade_bitflyer_constoplimit(self, type, buysellprice, amount, slide = 100):
         product= 'FX_BTC_JPY'
         print('trade bitflyer')
+        expire_time = 65
         if type == 'BUY' or type == 'buy':
             # order = self.quoinex_api.create_market_buy(product_id=5, quantity=str(amount), price_range=str(buysellprice))
             parameters =  [{ 'product_code' : product, 'condition_type' : 'STOP_LIMIT', 'side': 'BUY',
                             'price': str(buysellprice+slide), 'size': str(amount), 'trigger_price': str(buysellprice)}]
-            order = self.bitflyer_api.sendparentorder(order_method='SIMPLE', parameters=parameters)
+            order = self.bitflyer_api.sendparentorder(order_method='SIMPLE', minute_to_expire=expire_time, parameters=parameters)
         elif type == "SELL" or type == "sell":
             parameters = [{'product_code': product, 'condition_type': 'STOP_LIMIT', 'side': 'SELL',
                           'price': str(buysellprice-slide), 'size': str(amount), 'trigger_price': str(buysellprice)}]
-            order = self.bitflyer_api.sendparentorder(order_method='SIMPLE', parameters=parameters)
+            order = self.bitflyer_api.sendparentorder(order_method='SIMPLE', minute_to_expire=expire_time, parameters=parameters)
         else:
             print("error!")
         return (order)
@@ -273,26 +282,30 @@ class AutoTrading:
 
         return(-2) # try too many times stop trading
 
+    # check position of market
     def checkP(self):
         p = self.bitflyer_api.getpositions(product_code = 'FX_BTC_JPY')
+        position0 = 0.0
         if isinstance(p, list):
             for i in p:
-                if i['side'] == self.order_places['type'] and abs (i['size'] - self.position) < 0.001:
+                position0 += i['size']
+                if  abs (i['size'] - self.position) < 0.001:
                     predict.print_and_write('Real position is same as program one')
                     return(0)
-        if isinstance(p, dict):
-            if self.position < 0.001:
+        if isinstance(p, dict) or len(p) == 0:
+            if abs(self.position) < 0.001:
                 predict.print_and_write('Position not exist')
                 return (0)
         predict.print_and_write('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-        str = 'Position is unusual. Check!!! position :%f, program: %f'%(i['size'],self.position)
+        str = 'Position is unusual. Check!!! position :%f, program: %f'%(position0,self.position)
         predict.print_and_write(str)
         self.sendamail('position check failed', str)
         predict.print_and_write('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-        return(p)
+        return(1)
 
-
+    # check position of market and program
     def checkposition(self,placed):
+        product_code = 'FX_BTC_JPY'
         time.sleep(20)
         order0 = self.get_orderbyid(self.order_places['id'])
         x = order0['cancel_size']
@@ -464,8 +477,8 @@ class AutoTrading:
 
 
 if __name__ == '__main__':
-    tradeamount0 = 3000
-    waiting_time = 3600
+    tradeamount0 = 2000
+    waiting_time = 60
     detect_fre = 8 # detection frequency
     succeed = 0 # succeed times
     failed = 0 # failed times
