@@ -477,8 +477,8 @@ class AutoTrading:
 
 
 if __name__ == '__main__':
-    tradeamount0 = 3000
-    waiting_time = 3600
+    tradeamount0 = 2000
+    waiting_time = 60
     detect_fre = 8 # detection frequency
     succeed = 0 # succeed times
     failed = 0 # failed times
@@ -507,7 +507,7 @@ if __name__ == '__main__':
         buy = float(result[0])
         close = float(result[2]) # the close price of last hour
         autoTrading.initeverhold() # initinal the ever hold flag before each iteration
-        oid = autoTrading.onTrick_trade(buy, sell, slide=10)  # trade first time
+        oid = autoTrading.onTrick_trade(buy, sell, slide=100)  # trade first time
         if oid == -1 or oid == -2:
             print('oid : %d'%oid)
             break
