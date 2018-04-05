@@ -385,11 +385,11 @@ class AutoTrading:
                     try:
                         if side == 'sell':
                             new_order = self.trade_bitflyer_constoplimit(side, sellprice + takein_slide, amount, takein_slide)
-                            self.order_places['trade_price'] = sellprice - slide
+                            self.order_places['trade_price'] = sellprice
                             predict.print_and_write('Order :sell %f @ %f' % (amount, sellprice))
                         else:
                             new_order = self.trade_bitflyer_constoplimit(side, buyprice - takein_slide, amount, takein_slide)
-                            self.order_places['trade_price'] = buyprice + slide
+                            self.order_places['trade_price'] = buyprice
                             predict.print_and_write('Order :buy %f @ %f' % (amount, buyprice))
                         self.order_places['exist'] = True
                         self.order_places['id'] = new_order['parent_order_acceptance_id']
