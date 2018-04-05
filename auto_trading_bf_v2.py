@@ -335,8 +335,9 @@ class AutoTrading:
 
 
 
-    def detect_trade(self, buyprice, sellprice, slide = 10):
+    def detect_trade(self, buyprice, sellprice, slide = 100):
 
+        takein_slide = -slide
         buyprice = float(buyprice)
         sellprice = float(sellprice)
         if self.order_places['exist']: # if there is a order detect if it filled or not yet
@@ -383,11 +384,11 @@ class AutoTrading:
                 while try_times > 0:
                     try:
                         if side == 'sell':
-                            new_order = self.trade_bitflyer_constoplimit(side, sellprice, amount, slide)
+                            new_order = self.trade_bitflyer_constoplimit(side, sellprice + takein_slide, amount, takein_slide)
                             self.order_places['trade_price'] = sellprice - slide
                             predict.print_and_write('Order :sell %f @ %f' % (amount, sellprice))
                         else:
-                            new_order = self.trade_bitflyer_constoplimit(side, buyprice, amount, slide)
+                            new_order = self.trade_bitflyer_constoplimit(side, buyprice - takein_slide, amount, takein_slide)
                             self.order_places['trade_price'] = buyprice + slide
                             predict.print_and_write('Order :buy %f @ %f' % (amount, buyprice))
                         self.order_places['exist'] = True
@@ -512,7 +513,7 @@ if __name__ == '__main__':
             print('oid : %d'%oid)
             break
         price = (buy + sell) / 2 # price of gradient = 0.0
-        oid2 = autoTrading.detect_in_one_tunit(waiting_time, detect_fre, price, slide=20) # detection program in one time unit
+        oid2 = autoTrading.detect_in_one_tunit(waiting_time, detect_fre, price, slide=50) # detection program in one time unit
         if oid2 == -1 or oid2 == -2:
             print('oid2 : %d' % oid2)
             break
