@@ -130,6 +130,13 @@ class AutoTrading:
         print('Try too many times, failed')
         return({})
 
+    def handel_partly_deal(self, order):
+        # if order is partly dealed, the state should be 'COMPLETED' however executed size is not full size.
+        if order['parent_order_state'] == 'COMPLETED' and order['executed_size'] != order['size']:
+            if self.order_places['remain'] - order['executed_size'] >= 0.001:
+                order['executed_size'] = self.order_places['remain']
+        return(order)
+
     def cancle_order(self, id):
         product = 'FX_BTC_JPY'
         i = 20
@@ -170,6 +177,7 @@ class AutoTrading:
         if self.order_places['exist']: # There is an order existed in last time
 
             placed = self.get_orderbyid(self.order_places['id'])
+            placed = self.handel_partly_deal(placed)
             # detecting the order and get the information of this order
             if self.order_places['type'] == 'buy':
                 self.position += placed['executed_size']
@@ -342,6 +350,7 @@ class AutoTrading:
         sellprice = float(sellprice)
         if self.order_places['exist']: # if there is a order detect if it filled or not yet
             placed = self.get_orderbyid(self.order_places['id'])
+            placed = self.handel_partly_deal(placed)
             if self.order_places['type'] == 'buy':
                 self.position += placed['executed_size']
                 self.tradeamount -= placed['executed_size'] * self.order_places['trade_price']
@@ -437,7 +446,7 @@ class AutoTrading:
             cur_oclock =  int(time.strftime('%H:')[0:-1])
             cur_min = int(time.strftime('%M:')[0:-1])
             if (cur_oclock == 4 and cur_min >= 0 and cur_min <= 11) or (cur_oclock == 3 and cur_min >= 59):
-                predict.print_and_write('Server maintance')
+                predict.print_and_write('Server maintenance')
                 continue
             if cur_oclock != init_oclock: # if oclock changed regenerate the buy and sell price and retrading
                 result = prediction.publish_current_limit_price(periods="1H")
@@ -446,6 +455,7 @@ class AutoTrading:
                 price = (sell + buy) /2
                 #sell = price + self.order_places['slide']
                 #buy = price - self.order_places['slide']
+                predict.print_and_write('................................')
                 predict.print_and_write('Oclcok change from %d to %d, price changed to buy %f, sell %f'%(init_oclock, cur_oclock, buy, sell))
                 init_oclock = cur_oclock
                 oid = autoTrading.onTrick_trade(buy, sell, slide)
@@ -478,8 +488,8 @@ class AutoTrading:
 
 
 if __name__ == '__main__':
-    tradeamount0 = 2000
-    waiting_time = 60
+    tradeamount0 = 8000
+    waiting_time = 3600
     detect_fre = 8 # detection frequency
     succeed = 0 # succeed times
     failed = 0 # failed times
@@ -508,12 +518,12 @@ if __name__ == '__main__':
         buy = float(result[0])
         close = float(result[2]) # the close price of last hour
         autoTrading.initeverhold() # initinal the ever hold flag before each iteration
-        oid = autoTrading.onTrick_trade(buy, sell, slide=100)  # trade first time
+        oid = autoTrading.onTrick_trade(buy, sell, slide=50)  # trade first time
         if oid == -1 or oid == -2:
             print('oid : %d'%oid)
             break
         price = (buy + sell) / 2 # price of gradient = 0.0
-        oid2 = autoTrading.detect_in_one_tunit(waiting_time, detect_fre, price, slide=50) # detection program in one time unit
+        oid2 = autoTrading.detect_in_one_tunit(waiting_time, detect_fre, price, slide=100) # detection program in one time unit
         if oid2 == -1 or oid2 == -2:
             print('oid2 : %d' % oid2)
             break
