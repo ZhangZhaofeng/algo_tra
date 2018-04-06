@@ -61,6 +61,7 @@ class AutoTrading:
     position = 0
     wave_times = 0
     everhold = False
+    virgin_trade_flag = True
 
 
     def __init__(self, holdflag = False, order_places = {'exist': False, 'type': '','id': 0,'remain' : 0.0, 'trade_price' : '', 'slide': 0.0}, tradeamount = 1000, position = 0.0):
@@ -85,7 +86,7 @@ class AutoTrading:
     def trade_bitflyer_constoplimit(self, type, buysellprice, amount, slide = 100):
         product= 'FX_BTC_JPY'
         print('trade bitflyer')
-        expire_time = 65
+        expire_time = 75
         if type == 'BUY' or type == 'buy':
             # order = self.quoinex_api.create_market_buy(product_id=5, quantity=str(amount), price_range=str(buysellprice))
             parameters =  [{ 'product_code' : product, 'condition_type' : 'STOP_LIMIT', 'side': 'BUY',
@@ -186,16 +187,16 @@ class AutoTrading:
                 self.position -= placed['executed_size']
                 self.tradeamount += placed['executed_size'] * self.order_places['trade_price']
 
-            if self.order_places['remain'] - placed['executed_size'] < 0.001  : # if filled
+            if abs(self.order_places['remain'] - placed['executed_size']) < 0.001  : # if filled
             #if placed['status'] == 'filled':
                 if self.order_places['type'] == 'buy':
-                    predict.print_and_write('Buy order filled')
+                    predict.print_and_write('Buy order filled') # next sell
                     self.holdflag = True
                     self.everhold = True
-                    amount = self.position
+                    amount = self.position  - (-self.position)
                     #amount = trademount / sellprice
                     #amount = self.order_places['remain']
-                else:
+                else:  # sell order filled next buy
                     predict.print_and_write('Sell order filled')
                     self.holdflag = False
                     amount = self.tradeamount / buyprice
@@ -214,12 +215,12 @@ class AutoTrading:
                 self.order_places['id'] = 0
                 predict.print_and_write('remain:%f'%(self.order_places['remain']))
 
-                if self.order_places['remain'] < 0.001: # if filled
+                if abs(self.order_places['remain']) < 0.001: # if filled
                     if self.order_places['type'] == 'buy':
                         predict.print_and_write('Buy order filled')
                         self.holdflag = True
                         self.everhold = True
-                        amount = self.position
+                        amount = self.position - (-self.position)
                     else:
                         predict.print_and_write('Sell order filled')
                         self.holdflag = False
@@ -229,7 +230,7 @@ class AutoTrading:
                     if self.order_places['type'] == 'buy': #
                         predict.print_and_write('Buy order not filled buy again')
                         self.holdflag = False
-                        amount = self.tradeamount / buyprice # continue buy
+                        amount = self.tradeamount / buyprice
                         if amount < 0.001:
                             amount = 0.001
                         #
@@ -364,7 +365,7 @@ class AutoTrading:
                     predict.print_and_write('Buy order filled in this time unit')
                     self.holdflag = True
                     self.everhold = True
-                    amount = self.position
+                    amount = self.position - (-self.position)
                 else:
                     predict.print_and_write('Sell order filled in this time unit')
                     self.holdflag = False
@@ -488,8 +489,8 @@ class AutoTrading:
 
 
 if __name__ == '__main__':
-    tradeamount0 = 6000
-    waiting_time = 3600
+    tradeamount0 = 1000
+    waiting_time = 60
     detect_fre = 8 # detection frequency
     succeed = 0 # succeed times
     failed = 0 # failed times
