@@ -523,6 +523,7 @@ if __name__ == '__main__':
             print('oid : %d'%oid)
             break
         price = sell + (buy - sell) / 3 # price of gradient = 0.0
+        price = float('%.0f'%price)
         oid2 = autoTrading.detect_in_one_tunit(waiting_time, detect_fre, price, slide=100) # detection program in one time unit
         if oid2 == -1 or oid2 == -2:
             print('oid2 : %d' % oid2)
