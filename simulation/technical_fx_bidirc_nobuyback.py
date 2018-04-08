@@ -433,11 +433,10 @@ class GMMA:
             else:
                 value = cash
 
-
             amount[t][0] = buy_price
             amount[t][1] = sell_price
-            amount[t][2] = cash
-            amount[t][3] = btc
+            amount[t][2] = short_start_price + long_start_price
+            amount[t][3] = trading_cash
             amount[t][4] = value
             print("value: %s" % value)
 
