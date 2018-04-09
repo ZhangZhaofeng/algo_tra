@@ -61,6 +61,7 @@ class AutoTrading:
     position = 0
     wave_times = 0
     everhold = False
+    real_position = 0.0
 
 
     def __init__(self, holdflag = False, order_places = {'exist': False, 'type': '','id': 0,'remain' : 0.0, 'trade_price' : '', 'slide': 0.0}, tradeamount = 1000, position = 0.0):
@@ -207,6 +208,10 @@ class AutoTrading:
             else: # not filled or partly filled
                 self.order_places['remain'] = self.cancle_order(self.order_places['id'])
                 self.checkposition(placed)
+                pflag = self.checkP()
+                if pflag: # if position is unusuall
+                    self.recorrect_position(self.real_position, self.order_places['trade_price'], price, price)
+                    return(self.order_places['id'])
                 # if a order is cancelled, but some trading happened between
                 # detection and cancelling, the result may cause bug
                 # it is necessary to check the cancel result and detection result and fix them
@@ -308,8 +313,94 @@ class AutoTrading:
         str = 'Position is unusual. Check!!! position :%f, program: %f'%(position0,self.position)
         predict.print_and_write(str)
         self.sendamail('position check failed', str)
+        self.real_position = position0
         predict.print_and_write('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
         return(1)
+
+    def recorrect_position(self, p0, trade, buy, sell, slide=200):
+        predict.print_and_write('Position is not same as program try to fix it')
+        if p0 - self.position > 0.001:
+            if self.order_places['exist']:
+                predict.print_and_write('Cancel existing order')
+                remain = self.cancle_order(self.order_places['id'])
+                self.order_places['exist'] = False
+
+            time.sleep(10)
+            p = self.bitflyer_api.getpositions(product_code='FX_BTC_JPY')
+            p0 = 0.0
+            if isinstance(p, list):
+                for i in p:
+                    p0 += i['size']
+
+            self.holdflag = True
+            self.position = p0
+            self.tradeamount = self.tradeamount - p0 * trade
+            side = 'sell'
+            try_times = 20
+            while try_times > 0:
+                try:
+                    new_order = self.trade_bitflyer_constoplimit(side, sell, p0, slide)
+                    self.order_places['trade_price'] = sell
+                    predict.print_and_write('Fixing: Order :sell %f @ %f' % (p0, sell))
+
+                    self.order_places['exist'] = True
+                    self.order_places['id'] = new_order['parent_order_acceptance_id']
+                    self.order_places['remain'] = p0
+                    self.order_places['type'] = side
+                    self.order_places['slide'] = slide
+                    predict.print_and_write('order: id %s, amount: %s, type: %s, price: %s' % (
+                        new_order['parent_order_acceptance_id'], str(p0), side,
+                        str(self.order_places['trade_price'])))
+                    self.wave_times += 1
+                    return (self.order_places['id'])
+                except Exception:
+                    print('Error! Try again')
+                    predict.print_and_write(new_order)
+                    time.sleep(5)
+                    try_times -= 1
+
+
+        elif self.position - p0 > 0.001:
+            if self.order_places['exist']:
+                remain = self.cancle_order(self.order_places['id'])
+                self.order_places['exist'] = False
+            time.sleep(10)
+            p = self.bitflyer_api.getpositions(product_code='FX_BTC_JPY')
+            p0 = 0.0
+            if isinstance(p, list):
+                for i in p:
+                    p0 += i['size']
+
+            self.holdflag = False
+            self.position = p0
+            self.tradeamount = self.tradeamount + p0 * trade
+            side = 'buy'
+            try_times = 20
+            while try_times > 0:
+                try:
+                    new_order = self.trade_bitflyer_constoplimit(side, buy, p0, slide)
+                    self.order_places['trade_price'] = buy
+                    predict.print_and_write('Fixing: Order :sell %f @ %f' % (p0, buy))
+
+                    self.order_places['exist'] = True
+                    self.order_places['id'] = new_order['parent_order_acceptance_id']
+                    self.order_places['remain'] = p0
+                    self.order_places['type'] = side
+                    self.order_places['slide'] = slide
+                    predict.print_and_write('order: id %s, amount: %s, type: %s, price: %s' % (
+                        new_order['parent_order_acceptance_id'], str(p0), side,
+                        str(self.order_places['trade_price'])))
+                    self.wave_times += 1
+                    return (self.order_places['id'])
+                except Exception:
+                    print('Error! Try again')
+                    predict.print_and_write(new_order)
+                    time.sleep(5)
+                    try_times -= 1
+
+        return (-2)
+
+
 
     # check position of market and program
     def checkposition(self,placed):
@@ -321,7 +412,6 @@ class AutoTrading:
             str = 'Order is unusual. Check!!! cancel size :%f, remain: %f' % (x, self.order_places['remain'])
             predict.print_and_write(str)
             self.sendamail('order check failed', str)
-        self.checkP()
 
 
         # position0 = self.bitflyer_api.getcollateral()
@@ -448,6 +538,7 @@ class AutoTrading:
             if (cur_oclock == 4 and cur_min >= 0 and cur_min <= 11) or (cur_oclock == 3 and cur_min >= 59):
                 predict.print_and_write('Server maintenance')
                 continue
+
             if cur_oclock != init_oclock: # if oclock changed regenerate the buy and sell price and retrading
                 result = prediction.publish_current_limit_price(periods="1H")
                 sell = float(result[1])
@@ -467,6 +558,7 @@ class AutoTrading:
             if oid == -1 or oid == -2:
                 print(oid)
                 return(oid)
+
             #predict.print_and_write('Detect finished, waiting for another detection')
         time.sleep(waiting_time / (detect_fre + 1))
         return(self.wave_times)
@@ -488,7 +580,7 @@ class AutoTrading:
 
 
 if __name__ == '__main__':
-    tradeamount0 = 6000
+    tradeamount0 = 5000
     waiting_time = 3600
     detect_fre = 8 # detection frequency
     succeed = 0 # succeed times
