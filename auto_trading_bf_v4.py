@@ -84,6 +84,18 @@ class AutoTrading:
 
 
     def trade_bitflyer_constoplimit(self, type, buysellprice, amount, slide = 100):
+
+
+        while 1:
+            cur_oclock = int(time.strftime('%H:')[0:-1])
+            cur_min = int(time.strftime('%M:')[0:-1])
+            if (cur_oclock == 4 and cur_min >= 0 and cur_min <= 11) or (cur_oclock == 3 and cur_min >= 59):
+                predict.print_and_write('Server maintenance')
+                time.sleep(60)
+                continue
+            else:
+                break
+
         product= 'FX_BTC_JPY'
         print('trade bitflyer')
         expire_time = 75
@@ -101,6 +113,17 @@ class AutoTrading:
         return (order)
 
     def trade_bitflyer_specialorder(self, type, buysellprice, amount, slide = 100, insurance = 1500):
+
+        while 1:
+            cur_oclock = int(time.strftime('%H:')[0:-1])
+            cur_min = int(time.strftime('%M:')[0:-1])
+            if (cur_oclock == 4 and cur_min >= 0 and cur_min <= 11) or (cur_oclock == 3 and cur_min >= 59):
+                predict.print_and_write('Server maintenance')
+                time.sleep(60)
+                continue
+            else:
+                break
+
         product= 'FX_BTC_JPY'
         print('trade bitflyer')
         expire_time = 75
@@ -174,6 +197,8 @@ class AutoTrading:
                 #     if child_order != []:
                 #         self.bitflyer_api.cancelchildorder(product_code=product,
                 #                                            child_order_id=child_order['child_order_id'])
+                if order['parent_order_state'] == 'COMPLETED':
+                    return (0.0)
 
                 if order['parent_order_state'] == 'CANCELED':
                     predict.print_and_write('Order cancelled')
@@ -440,7 +465,8 @@ class AutoTrading:
         order0 = self.get_orderbyid(self.order_places['id'])
 
         x = order0['cancel_size']
-        if order0['parent_order_type'] == 'OCO':
+        # if order is completed, the cancel size will be zero, so current cancel size is not contain the second order
+        if order0['parent_order_type'] == 'OCO' and order0['parent_order_state'] != 'COMPLETED':
             x -= remain0
         if abs(x - self.order_places['remain']) > 0.001:
             str = 'Order is unusual. Check!!! cancel size :%f, remain: %f' % (x, self.order_places['remain'])
@@ -614,7 +640,7 @@ class AutoTrading:
 
 
 if __name__ == '__main__':
-    tradeamount0 = 2000
+    tradeamount0 = 1000
     waiting_time = 10
     detect_fre = 1 # detection frequency
     succeed = 0 # succeed times
