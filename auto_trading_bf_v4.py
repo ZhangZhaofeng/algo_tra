@@ -1,3 +1,6 @@
+#!/usr/bin/python3
+# coding=utf-8
+
 from tradingapis.bitflyer_api import pybitflyer
 from tradingapis.bitbank_api import public_api, private_api
 from tradingapis.zaif_api.impl import ZaifPublicApi, ZaifTradeApi
