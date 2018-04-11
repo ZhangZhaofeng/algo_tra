@@ -1,6 +1,3 @@
-#!/usr/bin/python3
-# coding=utf-8
-
 from tradingapis.bitflyer_api import pybitflyer
 from tradingapis.bitbank_api import public_api, private_api
 from tradingapis.zaif_api.impl import ZaifPublicApi, ZaifTradeApi
@@ -162,20 +159,23 @@ class AutoTrading:
 
     def get_orderbyid(self, id):
         product = 'FX_BTC_JPY'
-        i = 20
-        while i > 0:
+        ii = 20
+        while ii > 0:
             try:
             #order = self.bitflyer_api.getparentorder(product_code=product, parent_order_acceptance_id=id)
                 orders = self.get_orders()
                 for i in orders:
                     if i['parent_order_acceptance_id'] == id:
                         return (i)
-                print('order not find')
-                return({})
+                print('order not find, try other way')
+                order = self.bitflyer_api.getparentorder(product_code=product, parent_order_acceptance_id=id)
+                ii -= 1
+                time.sleep(10)
+                continue
             except Exception:
                 print('Server is fucked off ,try again')
                 time.sleep(20)
-                i -= 1
+                ii -= 1
                 continue
         print('Try too many times, failed')
         return({})
@@ -643,9 +643,9 @@ class AutoTrading:
 
 
 if __name__ == '__main__':
-    tradeamount0 = 1000
-    waiting_time = 10
-    detect_fre = 1 # detection frequency
+    tradeamount0 = 2000
+    waiting_time = 3600
+    detect_fre = 8 # detection frequency
     succeed = 0 # succeed times
     failed = 0 # failed times
     wait = 0 # waiting times
