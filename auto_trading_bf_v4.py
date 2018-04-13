@@ -353,8 +353,8 @@ class AutoTrading:
                 self.order_places['remain'] = self.cancle_order(self.order_places['id'])
                 self.checkposition(placed, remain0)
                 pflag = self.checkP()
-                #if pflag:
-                #    return(-1)
+                if pflag:
+                    return(-1)
                 # do not try to fix it now
                 # if pflag:  # if position is unusuall
                 #     self.recorrect_position(self.real_position, self.order_places['trade_price'], price, price)
