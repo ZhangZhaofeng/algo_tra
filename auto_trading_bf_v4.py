@@ -62,6 +62,7 @@ class AutoTrading:
     wave_times = 0
     everhold = False
     virgin_trade_flag = True
+    real_position = 0.0
 
 
     def __init__(self, holdflag = False, order_places = {'exist': False, 'type': '','id': 0,'remain' : 0.0, 'trade_price' : '', 'slide': 0.0}, tradeamount = 1000, position = 0.0):
@@ -84,8 +85,6 @@ class AutoTrading:
 
 
     def trade_bitflyer_constoplimit(self, type, buysellprice, amount, slide = 100):
-
-
         while 1:
             cur_oclock = int(time.strftime('%H:')[0:-1])
             cur_min = int(time.strftime('%M:')[0:-1])
@@ -113,7 +112,6 @@ class AutoTrading:
         return (order)
 
     def trade_bitflyer_specialorder(self, type, buysellprice, amount, slide = 100, insurance = 1500):
-
         while 1:
             cur_oclock = int(time.strftime('%H:')[0:-1])
             cur_min = int(time.strftime('%M:')[0:-1])
@@ -159,23 +157,20 @@ class AutoTrading:
 
     def get_orderbyid(self, id):
         product = 'FX_BTC_JPY'
-        ii = 20
-        while ii > 0:
+        i = 20
+        while i > 0:
             try:
             #order = self.bitflyer_api.getparentorder(product_code=product, parent_order_acceptance_id=id)
                 orders = self.get_orders()
                 for i in orders:
                     if i['parent_order_acceptance_id'] == id:
                         return (i)
-                print('order not find, try other way')
-                order = self.bitflyer_api.getparentorder(product_code=product, parent_order_acceptance_id=id)
-                ii -= 1
-                time.sleep(10)
-                continue
+                print('order not find')
+                return({})
             except Exception:
                 print('Server is fucked off ,try again')
                 time.sleep(20)
-                ii -= 1
+                i -= 1
                 continue
         print('Try too many times, failed')
         return({})
@@ -239,6 +234,8 @@ class AutoTrading:
             p0 = 0.0
             if isinstance(p, list):
                 for i in p:
+                    if i['side'] == 'SELL':
+                        i['size'] = -i['size']
                     p0 += i['size']
 
             self.holdflag = True
@@ -250,8 +247,8 @@ class AutoTrading:
                 try:
                     new_order = self.trade_bitflyer_specialorder(side, sell, p0, slide)
                     self.order_places['trade_price'] = sell
+                    predict.print_and_write('Position:%f Trademonut:%f' % (self.position, self.tradeamount))
                     predict.print_and_write('Fixing: Order :sell %f @ %f' % (p0, sell))
-
                     self.order_places['exist'] = True
                     self.order_places['id'] = new_order['parent_order_acceptance_id']
                     self.order_places['remain'] = p0
@@ -278,6 +275,8 @@ class AutoTrading:
             p0 = 0.0
             if isinstance(p, list):
                 for i in p:
+                    if i['side'] == 'SELL':
+                        i['size'] = -i['size']
                     p0 += i['size']
 
             self.holdflag = False
@@ -354,9 +353,12 @@ class AutoTrading:
                 self.order_places['remain'] = self.cancle_order(self.order_places['id'])
                 self.checkposition(placed, remain0)
                 pflag = self.checkP()
-                if pflag:  # if position is unusuall
-                    self.recorrect_position(self.real_position, self.order_places['trade_price'], price, price)
-                    return (self.order_places['id'])
+                #if pflag:
+                #    return(-1)
+                # do not try to fix it now
+                # if pflag:  # if position is unusuall
+                #     self.recorrect_position(self.real_position, self.order_places['trade_price'], price, price)
+                #     return (self.order_places['id'])
                 # if a order is cancelled, but some trading happened between
                 # detection and cancelling, the result may cause bug
                 # it is necessary to check the cancel result and detection result and fix them
@@ -446,19 +448,24 @@ class AutoTrading:
         position0 = 0.0
         if isinstance(p, list):
             for i in p:
+                if i['side'] == 'SELL':
+                    i['size'] =  -i['size']
                 position0 += i['size']
                 if  abs (i['size'] - self.position) < 0.001:
                     predict.print_and_write('Real position is same as program one')
+                    self.real_position = position0
                     return(0)
         if isinstance(p, dict) or len(p) == 0:
             if abs(self.position) < 0.001:
                 predict.print_and_write('Position not exist')
+                self.real_position = position0
                 return (0)
         predict.print_and_write('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
         str = 'Position is unusual. Check!!! position :%f, program: %f'%(position0,self.position)
         predict.print_and_write(str)
         self.sendamail('position check failed', str)
         predict.print_and_write('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+
         return(1)
 
     # check position of market and program
@@ -471,7 +478,11 @@ class AutoTrading:
         # if order is completed, the cancel size will be zero, so current cancel size is not contain the second order
         if order0['parent_order_type'] == 'OCO' and order0['parent_order_state'] != 'COMPLETED':
             x -= remain0
-        if abs(x - self.order_places['remain']) > 0.001:
+        if self.order_places['remain'] == []:
+            str = 'Order cancel failed. Check!!! size :%f, executed size: %f' % (order0['size'], order0['executed_size'])
+            predict.print_and_write(str)
+            self.sendamail('order check failed', str)
+        elif abs(x - self.order_places['remain']) > 0.001:
             str = 'Order is unusual. Check!!! cancel size :%f, remain: %f' % (x, self.order_places['remain'])
             predict.print_and_write(str)
             self.sendamail('order check failed', str)
