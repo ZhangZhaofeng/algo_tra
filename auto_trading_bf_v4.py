@@ -353,8 +353,8 @@ class AutoTrading:
                 self.order_places['remain'] = self.cancle_order(self.order_places['id'])
                 self.checkposition(placed, remain0)
                 pflag = self.checkP()
-                if pflag:
-                    return(-1)
+                #if pflag:
+                #    return(-1)
                 # do not try to fix it now
                 # if pflag:  # if position is unusuall
                 #     self.recorrect_position(self.real_position, self.order_places['trade_price'], price, price)
@@ -451,10 +451,10 @@ class AutoTrading:
                 if i['side'] == 'SELL':
                     i['size'] =  -i['size']
                 position0 += i['size']
-                if  abs (i['size'] - self.position) < 0.001:
-                    predict.print_and_write('Real position is same as program one')
-                    self.real_position = position0
-                    return(0)
+            if  abs(i['size'] - self.position) < 0.001:
+                predict.print_and_write('Real position is same as program one')
+                self.real_position = position0
+                return(0)
         if isinstance(p, dict) or len(p) == 0:
             if abs(self.position) < 0.001:
                 predict.print_and_write('Position not exist')
