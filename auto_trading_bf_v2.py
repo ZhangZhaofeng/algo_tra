@@ -302,9 +302,9 @@ class AutoTrading:
         if isinstance(p, list):
             for i in p:
                 position0 += i['size']
-                if  abs (i['size'] - self.position) < 0.001:
-                    predict.print_and_write('Real position is same as program one')
-                    return(0)
+            if abs(position0 - self.position) < 0.001:
+                predict.print_and_write('Real position is same as program one')
+                return(0)
         if isinstance(p, dict) or len(p) == 0:
             if abs(self.position) < 0.001:
                 predict.print_and_write('Position not exist')
@@ -380,7 +380,7 @@ class AutoTrading:
                 try:
                     new_order = self.trade_bitflyer_constoplimit(side, buy, p0, slide)
                     self.order_places['trade_price'] = buy
-                    predict.print_and_write('Fixing: Order :sell %f @ %f' % (p0, buy))
+                    predict.print_and_write('Fixing: Order :buy %f @ %f' % (p0, buy))
 
                     self.order_places['exist'] = True
                     self.order_places['id'] = new_order['parent_order_acceptance_id']
@@ -448,6 +448,7 @@ class AutoTrading:
                 self.position -= placed['executed_size']
                 self.tradeamount += placed['executed_size'] * self.order_places['trade_price']
 
+            predict.print_and_write('buy amount : %.3f sell amount : %.3f'%(self.position, self.tradeamount / buyprice))
             if self.order_places['remain'] - placed['executed_size'] < 0.001  : # if filled
             #if placed['status'] == 'filled':
                 if self.order_places['type'] == 'buy':
