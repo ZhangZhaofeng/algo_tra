@@ -334,7 +334,7 @@ class AutoTrading:
 
             self.holdflag = True
             self.position = p0
-            self.tradeamount = self.tradeamount - p0 * trade
+            self.tradeamount = self.tradeamount - (p0 - self.position) * trade
             side = 'sell'
             try_times = 20
             while try_times > 0:
@@ -373,7 +373,7 @@ class AutoTrading:
 
             self.holdflag = False
             self.position = p0
-            self.tradeamount = self.tradeamount + p0 * trade
+            self.tradeamount = self.tradeamount + (p0 - self.position)  * trade
             side = 'buy'
             try_times = 20
             while try_times > 0:
