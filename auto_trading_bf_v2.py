@@ -210,8 +210,9 @@ class AutoTrading:
                 self.checkposition(placed)
                 pflag = self.checkP()
                 if pflag: # if position is unusuall
-                    self.recorrect_position(self.real_position, self.order_places['trade_price'], price, price)
-                    return(self.order_places['id'])
+                    #self.recorrect_position(self.real_position, self.order_places['trade_price'], price, price)
+                    #return(self.order_places['id'])
+                    return(-1)
                 # if a order is cancelled, but some trading happened between
                 # detection and cancelling, the result may cause bug
                 # it is necessary to check the cancel result and detection result and fix them
@@ -317,88 +318,91 @@ class AutoTrading:
         predict.print_and_write('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
         return(1)
 
-    def recorrect_position(self, p0, trade, buy, sell, slide=200):
-        predict.print_and_write('Position is not same as program try to fix it')
-        if p0 - self.position > 0.001:
-            if self.order_places['exist']:
-                predict.print_and_write('Cancel existing order')
-                remain = self.cancle_order(self.order_places['id'])
-                self.order_places['exist'] = False
-
-            time.sleep(10)
-            p = self.bitflyer_api.getpositions(product_code='FX_BTC_JPY')
-            p0 = 0.0
-            if isinstance(p, list):
-                for i in p:
-                    p0 += i['size']
-
-            self.holdflag = True
-            self.position = p0
-            self.tradeamount = self.tradeamount - (p0 - self.position) * trade
-            side = 'sell'
-            try_times = 20
-            while try_times > 0:
-                try:
-                    new_order = self.trade_bitflyer_constoplimit(side, sell, p0, slide)
-                    self.order_places['trade_price'] = sell
-                    predict.print_and_write('Fixing: Order :sell %f @ %f' % (p0, sell))
-
-                    self.order_places['exist'] = True
-                    self.order_places['id'] = new_order['parent_order_acceptance_id']
-                    self.order_places['remain'] = p0
-                    self.order_places['type'] = side
-                    self.order_places['slide'] = slide
-                    predict.print_and_write('order: id %s, amount: %s, type: %s, price: %s' % (
-                        new_order['parent_order_acceptance_id'], str(p0), side,
-                        str(self.order_places['trade_price'])))
-                    self.wave_times += 1
-                    return (self.order_places['id'])
-                except Exception:
-                    print('Error! Try again')
-                    predict.print_and_write(new_order)
-                    time.sleep(5)
-                    try_times -= 1
-
-
-        elif self.position - p0 > 0.001:
-            if self.order_places['exist']:
-                remain = self.cancle_order(self.order_places['id'])
-                self.order_places['exist'] = False
-            time.sleep(10)
-            p = self.bitflyer_api.getpositions(product_code='FX_BTC_JPY')
-            p0 = 0.0
-            if isinstance(p, list):
-                for i in p:
-                    p0 += i['size']
-
-            self.holdflag = False
-            self.position = p0
-            self.tradeamount = self.tradeamount + (p0 - self.position)  * trade
-            side = 'buy'
-            try_times = 20
-            while try_times > 0:
-                try:
-                    new_order = self.trade_bitflyer_constoplimit(side, buy, p0, slide)
-                    self.order_places['trade_price'] = buy
-                    predict.print_and_write('Fixing: Order :buy %f @ %f' % (p0, buy))
-
-                    self.order_places['exist'] = True
-                    self.order_places['id'] = new_order['parent_order_acceptance_id']
-                    self.order_places['remain'] = p0
-                    self.order_places['type'] = side
-                    self.order_places['slide'] = slide
-                    predict.print_and_write('order: id %s, amount: %s, type: %s, price: %s' % (
-                        new_order['parent_order_acceptance_id'], str(p0), side,
-                        str(self.order_places['trade_price'])))
-                    self.wave_times += 1
-                    return (self.order_places['id'])
-                except Exception:
-                    print('Error! Try again')
-                    predict.print_and_write(new_order)
-                    time.sleep(5)
-                    try_times -= 1
-
-        return (-2)
+    # def recorrect_position(self, p0, trade, buy, sell, slide=200):
+    #     predict.print_and_write('Position is not same as program try to fix it')
+    #     if p0 - self.position > 0.001:
+    #         if self.order_places['exist']:
+    #             predict.print_and_write('Cancel existing order')
+    #             remain = self.cancle_order(self.order_places['id'])
+    #             self.order_places['exist'] = False
+    #
+    #         time.sleep(10)
+    #         p = self.bitflyer_api.getpositions(product_code='FX_BTC_JPY')
+    #         p0 = 0.0
+    #         if isinstance(p, list):
+    #             for i in p:
+    #                 p0 += i['size']
+    #
+    #         self.holdflag = True
+    #
+    #         self.tradeamount = self.tradeamount - (p0 - self.position) * trade
+    #         self.position = p0
+    #         side = 'sell'
+    #         try_times = 20
+    #         while try_times > 0:
+    #             try:
+    #                 new_order = self.trade_bitflyer_constoplimit(side, sell, p0, slide)
+    #                 self.order_places['trade_price'] = sell
+    #                 predict.print_and_write('Fixing: Order :sell %f @ %f' % (p0, sell))
+    #
+    #                 self.order_places['exist'] = True
+    #                 self.order_places['id'] = new_order['parent_order_acceptance_id']
+    #                 self.order_places['remain'] = p0
+    #                 self.order_places['type'] = side
+    #                 self.order_places['slide'] = slide
+    #                 predict.print_and_write('order: id %s, amount: %s, type: %s, price: %s' % (
+    #                     new_order['parent_order_acceptance_id'], str(p0), side,
+    #                     str(self.order_places['trade_price'])))
+    #                 self.wave_times += 1
+    #                 return (self.order_places['id'])
+    #             except Exception:
+    #                 print('Error! Try again')
+    #                 predict.print_and_write(new_order)
+    #                 time.sleep(5)
+    #                 try_times -= 1
+    #
+    #
+    #     elif self.position - p0 > 0.001:
+    #         if self.order_places['exist']:
+    #             remain = self.cancle_order(self.order_places['id'])
+    #             self.order_places['exist'] = False
+    #         time.sleep(10)
+    #         p = self.bitflyer_api.getpositions(product_code='FX_BTC_JPY')
+    #         p0 = 0.0
+    #         if isinstance(p, list):
+    #             for i in p:
+    #                 p0 += i['size']
+    #
+    #         self.holdflag = False
+    #
+    #         self.tradeamount = self.tradeamount + ( self.position - p0)  * trade
+    #         self.position = p0
+    #         side = 'buy'
+    #         try_times = 20
+    #         while try_times > 0:
+    #             try:
+    #                 buy_size = float('%.3f'%(self.position - p0))
+    #                 new_order = self.trade_bitflyer_constoplimit(side, buy, buy_size, slide)
+    #                 self.order_places['trade_price'] = buy
+    #                 predict.print_and_write('Fixing: Order :buy %f @ %f' % (buy_size, buy))
+    #
+    #                 self.order_places['exist'] = True
+    #                 self.order_places['id'] = new_order['parent_order_acceptance_id']
+    #                 self.order_places['remain'] = p0
+    #                 self.order_places['type'] = side
+    #                 self.order_places['slide'] = slide
+    #                 predict.print_and_write('order: id %s, amount: %s, type: %s, price: %s' % (
+    #                     new_order['parent_order_acceptance_id'], str(p0), side,
+    #                     str(self.order_places['trade_price'])))
+    #                 self.wave_times += 1
+    #                 return (self.order_places['id'])
+    #             except Exception:
+    #                 print('Error! Try again')
+    #                 predict.print_and_write(new_order)
+    #                 time.sleep(5)
+    #                 try_times -= 1
+    #
+    #     return (-2)
 
 
 
