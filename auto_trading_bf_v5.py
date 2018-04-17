@@ -372,8 +372,8 @@ class AutoTrading:
 
 
 if __name__ == '__main__':
-    tradeamount0 = 8000
-    waiting_time = 1
+    tradeamount0 = 5000
+    waiting_time = 3600
     detect_fre = 0 # detection frequency
     succeed = 0 # succeed times
     failed = 0 # failed times
@@ -381,13 +381,13 @@ if __name__ == '__main__':
     if 1:
         order_places = {'exist' : False,'type' : '','id' : '','remain' : 0.0, 'trade_price' : 0.0}
         tradeamount0 = 8000
-        position = -0.005
+        position = 0.00
         holdflag = False
     elif 0: # if you want to recover the prcessing , input the detail of your order in following and change 'if 1' to 'if 0'
-        order_places = {'exist': True, 'type': 'buy', 'id': 'JRF20180416-174617-015327', 'remain': 0.011,
+        order_places = {'exist': True, 'type': 'buy', 'id': 'JRF20180416-231608-353837', 'remain': 0.01,
                         'trade_price': 905432.0, 'slide': 200.0}
         tradeamount0 = 10000
-        position = -0.005 # 0
+        position = 0 # 0
         holdflag = False
     elif 0:
         # if buy order exist tradeamount should be 0
