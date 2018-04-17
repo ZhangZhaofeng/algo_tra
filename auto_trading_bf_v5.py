@@ -378,6 +378,7 @@ if __name__ == '__main__':
     succeed = 0 # succeed times
     failed = 0 # failed times
     wait = 0 # waiting times
+    maintance_time = 800
     if 1:
         order_places = {'exist' : False,'type' : '','id' : '','remain' : 0.0, 'trade_price' : 0.0}
         tradeamount0 = 8000
@@ -403,6 +404,7 @@ if __name__ == '__main__':
     predict.print_and_write('Collateral: %f Profit: %f ' % (collateral[0], collateral[1]))
     tradingtimes = 0
     while 1:
+        this_maintance_time = 0
         if tradingtimes > 0: # get the buy and sell price of last hour
             sell0 = sell
             buy0 = buy
@@ -417,11 +419,18 @@ if __name__ == '__main__':
         buy = float(result[0])
         close = float(result[2]) # the close price of last hour
         autoTrading.initeverhold() # initinal the ever hold flag before each iteration
+        cur_oclock = int(time.strftime('%H:')[0:-1])
+        cur_min = int(time.strftime('%M:')[0:-1])
+        if (cur_oclock == 4 and cur_min >= 0 and cur_min <= 11) or (cur_oclock == 3 and cur_min >= 59):
+            predict.print_and_write('Server maintenance')
+            this_maintance_time = maintance_time
+            time.sleep(this_maintance_time)
+
         oid = autoTrading.onTrick_trade(buy, sell, slide=200)  # trade first time
         if oid == -1 or oid == -2:
             print('oid : %d'%oid)
             break
-        time.sleep(waiting_time)
+        time.sleep(waiting_time - this_maintance_time)
         collateral = autoTrading.get_collateral()
 
         # record following thing of last 2 hour:
