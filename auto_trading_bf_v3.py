@@ -375,7 +375,7 @@ class AutoTrading:
 
 if __name__ == '__main__':
     tradeamount0 = 30000
-    waiting_time = 5
+    waiting_time = 3600
     detect_fre = 0 # detection frequency
     succeed = 0 # succeed times
     failed = 0 # failed times
@@ -455,6 +455,19 @@ if __name__ == '__main__':
         if oid == -1 or oid == -2:
             print('oid : %d'%oid)
             break
+        if 1:
+            tempcf = dict()
+            tempcf['order'] = {'exist': autoTrading.order_places['exist'],
+                               'type': autoTrading.order_places['type'],
+                               'id': autoTrading.order_places['id'],
+                               'remain': autoTrading.order_places['remain'],
+                               'trade_price': autoTrading.order_places['trade_price'],
+                               'slide': autoTrading.order_places['slide'],
+                               'tradeamount': autoTrading.tradeamount,
+                               'position': autoTrading.position,
+                               'holdflag': autoTrading.holdflag,
+                               'timestamp': time.strftime('%b-%d/%H:%M:%S')}
+            result = cf.save_config_order(tempcf)
         time.sleep(waiting_time - this_maintance_time)
         collateral = autoTrading.get_collateral()
 
@@ -484,16 +497,4 @@ if __name__ == '__main__':
         #predict.print_and_write('All jpy: %s btc: %s' % (str(float(cur_jpy)+ autoTrading.tradeamount), str(float(cur_btc) + autoTrading.position)))
         predict.print_and_write('==============================================')
         tradingtimes +=1
-        if 1:
-            tempcf = dict()
-            tempcf['order'] = {'exist': autoTrading.order_places['exist'],
-                               'type': autoTrading.order_places['type'],
-                               'id': autoTrading.order_places['id'],
-                               'remain': autoTrading.order_places['remain'],
-                               'trade_price': autoTrading.order_places['trade_price'],
-                               'slide': autoTrading.order_places['slide'],
-                               'tradeamount': autoTrading.tradeamount,
-                               'position': autoTrading.position,
-                               'holdflag': autoTrading.holdflag,
-                               'timestamp': time.strftime('%b-%d/%H:%M:%S')}
-            result = cf.save_config_order(tempcf)
+
