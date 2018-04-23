@@ -179,6 +179,7 @@ class AutoTrading:
                         real_executed_size = abs(self.position - pflag)
                         if real_executed_size > self.order_places['remain']:
                             predict.print_and_write('maybe double executed')
+                            predict.print_and_write('real: %f, executed: %f, pre_remain: %f'%(real_executed_size, order['executed_size'], self.order_places['remain']))
                         remain_amount = float(order['cancel_size']) - self.order_places['remain']
                     else:
                         remain_amount = float(order['cancel_size'])
@@ -210,7 +211,7 @@ class AutoTrading:
             placed = self.get_orderbyid(self.order_places['id'])
             placed = self.handel_partly_deal(placed)
             if placed['executed_size'] > self.order_places['remain']:
-                predict.print_and_write('Maybe double dealled, size %f'%(placed['executed_size'] - self.order_places['remain']))
+                predict.print_and_write('Maybe double dealed, size %f'%(placed['executed_size'] - self.order_places['remain']))
                 return (-1)
 
             # detecting the order and get the information of this order
@@ -456,7 +457,7 @@ if __name__ == '__main__':
             mid_price = (selli + buyi) / 2
             sell = float('%.0f'%(mid_price+ selli*0.0001))
             buy = float('%.0f'%(mid_price- selli*0.0001))
-        predict.print_and_write('sell: %.0f , buy : %.0f' % (sell, buy))
+        predict.print_and_write('sell: %.0f , buy : %.0f , middel : %.0f'% (selli, buyi, mid_price))
         close = float(result[2]) # the close price of last hour
         autoTrading.initeverhold() # initinal the ever hold flag before each iteration
 
