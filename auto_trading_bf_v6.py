@@ -335,6 +335,7 @@ class AutoTrading:
         position0 = 0.0
         if isinstance(p, list):
             for i in p:
+                predict.print_and_write('check in price: %f'%(i['price']))
                 if i['side'] == 'SELL':
                     position0 -= i['size']
                 else:
@@ -455,13 +456,13 @@ if __name__ == '__main__':
         buyi = float(result[0])
         if 1:
             mid_price = (selli + buyi) / 2
-            sell = float('%.0f'%(mid_price+ selli*0.0001))
-            buy = float('%.0f'%(mid_price- selli*0.0001))
+            sell = float('%.0f'%(mid_price + selli*0.0005))
+            buy = float('%.0f'%(mid_price - selli*0.0005))
         predict.print_and_write('sell: %.0f , buy : %.0f , middel : %.0f'% (selli, buyi, mid_price))
         close = float(result[2]) # the close price of last hour
         autoTrading.initeverhold() # initinal the ever hold flag before each iteration
 
-        oid = autoTrading.onTrick_trade(buy, sell, buyi, selli, slide=0)  # trade first time
+        oid = autoTrading.onTrick_trade(buy, sell, buyi, selli, slide=300)  # trade first time
         if oid == -1 or oid == -2:
             print('oid : %d'%oid)
             break
