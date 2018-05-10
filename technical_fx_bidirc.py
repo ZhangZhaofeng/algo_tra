@@ -39,6 +39,17 @@ class HILO:
         ma_low = self.get_LOW_MA(LOW)
         return ma_low
 
+    def publish_current_hilo_price(self, num=100, periods="1H"):
+        (time_stamp, open_price, high_price, low_price, close_price) = self.btc_charts.get_price_array_till_finaltime(
+            final_unixtime_stamp=time.time(), num=num, periods=periods, converter=True)
+
+        low_price_ma = self.get_short_price(low_price)
+        high_price_ma = self.get_long_price(high_price)
+        (buyprice, sellprice)=(high_price_ma[-1][0],low_price_ma[-1][0])
+        a=(int(buyprice), int(sellprice))
+        print(a)
+        return (int(buyprice), int(sellprice))
+
     def simulate(self, num=100, periods="1m" ,end_offset=0):
         mode=0  #0: both long and short;
                 #1: only long;
@@ -159,7 +170,6 @@ class HILO:
                 else:
                     if all[t][2] > buy_price:
                         trade_back+=1
-
 
             elif not short and long:
                 if all[t][1]<sell_price:
@@ -698,9 +708,9 @@ if __name__ == '__main__':
 
     sum = 0.
     counter_sum= 0
-    length = 10
+    length = 1
     for i in range(length):
-        value,counter = hilo.simulate(num=24 * 7 * 1 + 50, periods="1H", end_offset=3600 * 24 * 7 * (i+10))
+        value,counter = hilo.simulate(num=24 * 7 * 35 + 50, periods="1H", end_offset=3600 * 24 * 7 * (i+0))
         sum = sum + value
         counter_sum = counter_sum+counter
     # hilo.simulate(num=60*24*50+61, periods="1m", end_offset=0)
@@ -708,3 +718,5 @@ if __name__ == '__main__':
 
     print(sum / length)
     print(counter_sum / length)
+
+    # hilo.publish_current_hilo_price()
