@@ -13,6 +13,222 @@ import matplotlib.pyplot as plt
 import time
 
 
+class HILO:
+    def __init__(self):
+        print("HILO initialized")
+        self.btc_charts = historical_fx.charts()
+
+    def MA(self, ndarray, timeperiod=5):
+        x = np.array([talib.MA(ndarray.T[0], timeperiod)])
+        # print(x)
+        return x.T
+
+    def get_HIGH_MA(self, HIGH):  # price=1*N (N>61)
+        ma_high=self.MA(HIGH,20)
+        return ma_high
+
+    def get_LOW_MA(self, LOW):  # price=1*N (N>61)
+        ma_low=self.MA(LOW,30)
+        return ma_low
+
+    def get_long_price(self, HIGH):
+        ma_high=self.get_HIGH_MA(HIGH)
+        return ma_high
+
+    def get_short_price(self, LOW):
+        ma_low = self.get_LOW_MA(LOW)
+        return ma_low
+
+    def simulate(self, num=100, periods="1m" ,end_offset=0):
+        mode=0  #0: both long and short;
+                #1: only long;
+                #2: only short;
+
+
+        leverage = 1.0
+        fee_ratio = 0.000  # trading fee percent
+        ################Simulation#######################
+        (time_stamp, open_price, high_price, low_price, close_price) = self.btc_charts.get_price_array_till_finaltime(
+            final_unixtime_stamp=time.time() - end_offset, num=num, periods=periods, converter=True)
+
+
+        all = np.c_[time_stamp, open_price, high_price, low_price, close_price]
+        long_price = self.get_long_price(high_price)
+        short_price = self.get_short_price(low_price)
+
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        print(len(long_price))
+        print(len(short_price))
+
+
+        amount = np.zeros([len(all), 7])
+        long = False
+        short = False
+        cash = 10000.
+        prev_cash=cash
+        btc = 0.
+        value = cash
+        long_times = 0
+        short_times = 0
+        short_start_price= 0.
+        long_start_price = 0.
+        trade_back=0
+        for t in range(50, len(all)):
+            # (gradient_real, grad_w_real)=self.get_current_GMMA_gradient_realtime(ema[t-1], all[t][2], periods)
+            #current hour's operation price initialization
+            buy_price = long_price[t]
+            sell_price = short_price[t]
+
+
+            if not short and not long:
+                if all[t][3] < sell_price:   #low price is lower than sell_price
+                    #short starts
+                    short = True
+                    short_start_price = sell_price
+                    trading_cash = cash
+                    short_times += 1
+                    amount[t][6] = 555
+                    cash=0.
+
+                    #Current hour processing
+                    if all[t][4] > buy_price:
+                        # short over
+                        short = False
+                        cash=(1+(short_start_price-buy_price)/short_start_price)*trading_cash
+                        if cash < 0:
+                            cash = 0
+                        short_start_price = 0.
+                        trading_cash = 0.
+
+                        # long starts
+                        long = True
+                        long_start_price = buy_price
+                        trading_cash = cash
+                        long_times += 1
+                        amount[t][5] = 888
+                        cash = 0.
+                elif all[t][2] > buy_price: # high price is higher than buy_price
+                    # long starts
+                    long = True
+                    long_start_price = buy_price
+                    trading_cash = cash
+                    long_times += 1
+                    amount[t][5] = 888
+                    cash = 0.
+
+                    #Current hour processing
+                    if all[t][4] < sell_price:
+                        # long over
+                        long = False
+                        cash=(1-(long_start_price-sell_price)/long_start_price)*trading_cash
+                        if cash < 0:
+                            cash = 0
+                        long_start_price = 0.
+                        trading_cash = 0.
+
+                        # short starts
+                        short = True
+                        short_start_price = sell_price
+                        trading_cash = cash
+                        short_times += 1
+                        amount[t][6] = 555
+                        cash = 0.
+
+
+            elif short and not long:
+                if all[t][1]>buy_price:
+                    buy_price=all[t][1]
+
+                if all[t][4] > buy_price:  # close price is higher than reverse_price
+                    # short over
+                    short = False
+                    cash = (1+(short_start_price-buy_price)/short_start_price)*trading_cash
+                    if cash<0:
+                        cash==0
+                    short_start_price = 0.
+                    trading_cash = 0.
+                    amount[t][5] = 888
+
+                    # long starts
+                    long = True
+                    long_start_price = buy_price
+                    trading_cash = cash
+                    cash = 0.
+                    long_times += 1
+                    amount[t][5] = 888
+                else:
+                    if all[t][2] > buy_price:
+                        trade_back+=1
+
+
+            elif not short and long:
+                if all[t][1]<sell_price:
+                    sell_price=all[t][1]
+
+                if all[t][4] < sell_price:  # close price is lower than reverse_price
+                    #long over
+                    long = False
+                    cash = (1 - (long_start_price - sell_price) / long_start_price) * trading_cash
+                    if cash < 0:
+                        cash == 0
+                    long_start_price = 0.
+                    trading_cash = 0.
+                    amount[t][6] = 555
+
+                    # short starts
+                    short = True
+                    short_start_price = sell_price
+                    trading_cash = cash
+                    cash=0.
+                    short_times += 1
+                    amount[t][6] = 555
+                else:
+                    if all[t][3] < sell_price:
+                        trade_back+=1
+
+
+            #result log
+            if cash==0 and long:
+                value = (1-(long_start_price-all[t][4])/long_start_price)*trading_cash
+                if value<0:
+                    print("Asset reset to zero")
+                    break
+            elif cash==0 and short:
+                value = (1+(short_start_price-all[t][4])/short_start_price)*trading_cash
+                if value<0:
+                    print("Asset reset to zero")
+                    break
+            else:
+                value = cash
+
+
+            amount[t][0] = buy_price
+            amount[t][1] = sell_price
+            amount[t][2] = cash
+            amount[t][3] = btc
+            amount[t][4] = value
+            print("value: %s" % value)
+
+        all = np.c_[
+            time_stamp, open_price, high_price, low_price, close_price, long_price,short_price, amount]
+
+        data = pd.DataFrame(all,
+                            columns={"1", "2", "3", "4", "5", "6", "7", "8", "9", "10","11","12","13", "14"})
+
+        print("============================")
+        print(long_times)
+        print(short_times)
+
+        cwd = os.getcwd()
+        data.to_csv(
+            cwd + "_jpy.csv",
+            index=True)
+
+        print("trade_back= %s "  %trade_back)
+
+        return value, trade_back
+
+
 class GMMA:
     def __init__(self):
         print("GMMA initialized")
@@ -458,9 +674,13 @@ if __name__ == '__main__':
 
     # print(close_price)
 
-    gmma = GMMA()
+    # gmma = GMMA()
+    # # simulate the past 24 hours
+    # gmma.simulate(num=24 * 7 * 1 + 61, periods="1H", end_offset=3600 * 24 * 7 * 0)
+
+    hilo = HILO()
     # simulate the past 24 hours
-    gmma.simulate(num=24 * 7 * 1 + 61, periods="1H", end_offset=3600 * 24 * 7 * 0)
+    # hilo.simulate(num=24 * 7 * 1 + 20, periods="1H", end_offset=3600 * 24 * 7 * 0)
 
 
     # sum = 0.
@@ -475,3 +695,16 @@ if __name__ == '__main__':
     #
     # print(sum / length)
     # print(counter_sum / length)
+
+    sum = 0.
+    counter_sum= 0
+    length = 10
+    for i in range(length):
+        value,counter = hilo.simulate(num=24 * 7 * 1 + 50, periods="1H", end_offset=3600 * 24 * 7 * (i+10))
+        sum = sum + value
+        counter_sum = counter_sum+counter
+    # hilo.simulate(num=60*24*50+61, periods="1m", end_offset=0)
+    # a=hilo.publish_current_limit_price(periods="1H")
+
+    print(sum / length)
+    print(counter_sum / length)
