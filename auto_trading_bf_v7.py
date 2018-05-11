@@ -509,7 +509,7 @@ if __name__ == '__main__':
 
         sell = float('%.0f' % (thisline+100))
         buy = float('%.0f' % (thisline-100))
-        predict.print_and_write('sell: %.0f , buy : %.0f ' % (selli, buyi))
+        predict.print_and_write('sell: %.0f , buy : %.0f , %s' % (selli, buyi, curthis))
         autoTrading.initeverhold()  # initinal the ever hold flag before each iteration
         previousline = hiloline
         buys = buy + 2000
