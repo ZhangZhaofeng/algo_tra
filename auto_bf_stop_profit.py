@@ -10,6 +10,7 @@ import math
 from email.mime.text import MIMEText
 from email.utils import formatdate
 import smtplib
+import data2csv
 
 # stop version
 
@@ -78,30 +79,44 @@ class AutoTrading:
                 parameters =  [{'product_code': product, 'condition_type': 'STOP', 'side': 'BUY', 'size': str(amount),
                             'trigger_price': str(trigger)}]
                 order = self.bitflyer_api.sendparentorder(order_method='SIMPLE', minute_to_expire=expire_time, parameters=parameters)
+                data2csv.data2csv(
+                    [time.strftime('%b:%d:%H:%M'), 'order', 'BUY_STOP', 'amount', '%f' % float(amount), 'trigger', '%f' % float(trigger)])
             elif type == "SELL" or type == "sell":
                 parameters = [{'product_code': product, 'condition_type': 'STOP', 'side': 'SELL', 'size': str(amount),
                            'trigger_price': str(trigger)}]
                 order = self.bitflyer_api.sendparentorder(order_method='SIMPLE', minute_to_expire=expire_time, parameters=parameters)
+                data2csv.data2csv(
+                    [time.strftime('%b:%d:%H:%M'), 'order', 'SELL_STOP', 'amount',  '%f' % float(amount), 'trigger', '%f' % float(trigger)])
         elif limitorstop == 'stop_limit':
             if type == 'BUY' or type == 'buy':
                 parameters = [{ 'product_code' : product, 'condition_type' : 'STOP_LIMIT', 'side': 'BUY',
                                  'price': str(limit), 'size': str(amount), 'trigger_price': str(trigger)}]
                 order = self.bitflyer_api.sendparentorder(order_method='SIMPLE', minute_to_expire=expire_time, parameters=parameters)
+                data2csv.data2csv(
+                    [time.strftime('%b:%d:%H:%M'), 'order', 'BUY_STOPLIMIT', 'amount', '%f' % float(amount), 'limit', '%f'% float(limit), 'trigger', '%f' % float(trigger)])
             elif type == "SELL" or type == "sell":
                 parameters = [{'product_code': product, 'condition_type': 'STOP_LIMIT', 'side': 'SELL',
                                 'price': str(limit), 'size': str(amount), 'trigger_price': str(trigger)}]
                 order = self.bitflyer_api.sendparentorder(order_method='SIMPLE', minute_to_expire=expire_time, parameters=parameters)
+                data2csv.data2csv(
+                    [time.strftime('%b:%d:%H:%M'), 'order', 'SELL_STOPLIMIT', 'amount', '%f' % float(amount), 'limit', '%f' % float(limit), 'trigger', '%f' % float(trigger)])
         elif limitorstop == 'limit':
             if type == 'BUY' or type == 'buy':
                 parameters = [{ 'product_code' : product, 'condition_type' : 'LIMIT', 'side': 'BUY',
                                  'price': str(limit), 'size': str(amount)}]
                 order = self.bitflyer_api.sendparentorder(order_method='SIMPLE', minute_to_expire=expire_time, parameters=parameters)
+                data2csv.data2csv(
+                    [time.strftime('%b:%d:%H:%M'), 'order', 'BUY_LIMIT', 'amount', '%f' % float(amount), 'limit', '%f' % float(limit)])
             elif type == "SELL" or type == "sell":
                 parameters = [{'product_code': product, 'condition_type': 'LIMIT', 'side': 'SELL',
                                 'price': str(limit), 'size': str(amount)}]
                 order = self.bitflyer_api.sendparentorder(order_method='SIMPLE', minute_to_expire=expire_time, parameters=parameters)
+                data2csv.data2csv(
+                    [time.strftime('%b:%d:%H:%M'), 'order', 'SELL_LIMIT', 'amount', '%f' % float(amount), 'limit', '%f' % float(limit)])
         else:
             print("error!")
+
+
         return (order)
 
     # trade oco while no position
@@ -117,6 +132,8 @@ class AutoTrading:
                       ]
         order = self.bitflyer_api.sendparentorder(order_method='OCO', minute_to_expire=expire_time,
                                                   parameters=parameters)
+        data2csv.data2csv(
+            [time.strftime('%b:%d:%H:%M'), 'order', 'OCO_STOP', 'amount', '%f' % float(amount), 'buy', '%f' % float(buy), 'sell', '%f' % float(sell)])
         return (order)
 
     # trade oco with position
@@ -134,6 +151,11 @@ class AutoTrading:
                       ]
             order = self.bitflyer_api.sendparentorder(order_method='OCO', minute_to_expire=expire_time,
                                                   parameters=parameters)
+            data2csv.data2csv(
+                [time.strftime('%b:%d:%H:%M'), 'order', 'OCO_SELL_LIMIT_STOP', 'amount', '%f' % float(amount), 'stopprofit',
+                 '%f' % float(stopprofit), 'stoploss', '%f' % float(stoploss)])
+
+
         elif po == 'short':
             parameters = [{'product_code': product, 'condition_type': 'LIMIT', 'side': 'BUY',
                            'size': str(amount), 'price': str(stopprofit)},
@@ -142,6 +164,9 @@ class AutoTrading:
                           ]
             order = self.bitflyer_api.sendparentorder(order_method='OCO', minute_to_expire=expire_time,
                                                       parameters=parameters)
+            data2csv.data2csv(
+                [time.strftime('%b:%d:%H:%M'), 'order', 'OCO_BUY_LIMIT_STOP', 'amount', '%f' % float(amount), 'stopprofit',
+                 '%f' % float(stopprofit), 'stoploss', '%f' % float(stoploss)])
 
         return (order)
 
@@ -180,7 +205,7 @@ class AutoTrading:
         for i in trade_history:
             cur_price += i['size']/total_size * i['price']
 
-        return(math.round(cur_price))
+        return(math.floor(cur_price))
 
     # if no position find a position to trade
     def trade_none_position(self, curprice , hi, lo):
@@ -188,7 +213,7 @@ class AutoTrading:
         result = self.get_hilo()
         hi = result[1]
         lo = result[0]
-        trade_amount = 0.02
+        trade_amount = 0.01
         # find a direction to trade
         if curprice > hi:
             self.cur_find_direction = 'short'
@@ -204,26 +229,26 @@ class AutoTrading:
             order = self.trade_simple('sell', 'stop', lo, 0, trade_amount)
             self.print_order(order)
             self.order_exist = True
-            self.orderid = order['parent_order_acceptance_id']
+            self.order_id = order['parent_order_acceptance_id']
         elif self.cur_find_direction == 'long':
             order = self.trade_simple('buy', 'stop', hi, 0, trade_amount)
             self.print_order(order)
             self.order_exist = True
-            self.orderid = order['parent_order_acceptance_id']
+            self.order_id = order['parent_order_acceptance_id']
         elif self.cur_find_direction == 'long_short':
             order = self.trade_oco1(hi, lo, trade_amount)
             self.print_order(order)
             self.order_exist = True
-            self.orderid = order['parent_order_acceptance_id']
+            self.order_id = order['parent_order_acceptance_id']
 
     # if with position give a price to stopprofit and stoploss
     def trade_with_position(self, hi, lo):
 
-        profitcut_factor = 0.015
+        profitcut_factor = 0.025
         checkins = self.get_checkin_price()
         checkin_price = checkins[0]
         self.cur_hold_position = checkins[1]
-        trade_amount = self.cur_hold_position
+        trade_amount = abs(self.cur_hold_position)
         traed_amount_switch = trade_amount + 0.01
 
 
@@ -321,6 +346,7 @@ class AutoTrading:
             remain_test = self.cancel_order(self.order_id) + 1
             print('cancel order, remain %f'%(remain_test -1))
 
+
         checkins = self.get_checkin_price()
         # if not position exist trade none position
         if checkins[1] == 0.0:
@@ -332,7 +358,10 @@ class AutoTrading:
             predict.print_and_write('current price is %f'%(cur_price))
             self.trade_none_position(cur_price, hi ,lo)
 
+        # else trade in position
         else:
+            data2csv.data2csv(
+                [time.strftime('%b:%d:%H:%M'), 'position', '%f' % float(checkins[1]) , 'check in price', '%f' % float(checkins[0])])
             predict.print_and_write('Position exist, trade with position')
             result = self.get_hilo()
             hi = result[1]
@@ -343,6 +372,6 @@ if __name__ == '__main__':
     autoTrading = AutoTrading()
     while 1:
         autoTrading.judge_condition()
-        time.sleep(10)
+        time.sleep(600)
 
     #autoTrading.get_current_price(100)
