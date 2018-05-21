@@ -246,7 +246,6 @@ class AutoTrading:
     def trade_with_position(self, hi, lo):
 
         profitcut_factor = 0.018
-        stoploss_factor = 0.004
         checkins = self.get_checkin_price()
         checkin_price = checkins[0]
         self.cur_hold_position = checkins[1]
@@ -255,10 +254,7 @@ class AutoTrading:
 
 
         if self.cur_hold_position < 0.0:
-            if checkin_price > hi:
-                stoploss = math.floor(checkin_price * (1 + stoploss_factor))
-            else:
-                stoploss = hi
+            stoploss = hi
             stopprofit = math.floor(checkin_price * (1 - profitcut_factor))
             if stopprofit  > hi:
                 stopprofit = hi
@@ -267,10 +263,7 @@ class AutoTrading:
             self.order_exist = True
             self.order_id = order['parent_order_acceptance_id']
         elif self.cur_hold_position > 0.0:
-            if checkin_price < lo:
-                stoploss = math.floor(checkin_price * (1 - stoploss_factor))
-            else:
-                stoploss = lo
+            stoploss = lo
             stopprofit = math.floor(checkin_price * (1 + profitcut_factor))
             if stopprofit  < lo:
                 stopprofit = lo
