@@ -51,6 +51,7 @@ class AutoTrading:
     cur_find_direction = 'none'
     order_exist = False
     order_id = ''
+    init_trade_amount = 0.03
 
     def __init__(self):
         print("Initializing API")
@@ -213,7 +214,7 @@ class AutoTrading:
         result = self.get_hilo()
         hi = result[1]
         lo = result[0]
-        trade_amount = 0.01
+        trade_amount = self.init_trade_amount
         # find a direction to trade
         if curprice > hi:
             self.cur_find_direction = 'short'
@@ -244,12 +245,12 @@ class AutoTrading:
     # if with position give a price to stopprofit and stoploss
     def trade_with_position(self, hi, lo):
 
-        profitcut_factor = 0.025
+        profitcut_factor = 0.018
         checkins = self.get_checkin_price()
         checkin_price = checkins[0]
         self.cur_hold_position = checkins[1]
         trade_amount = abs(self.cur_hold_position)
-        traed_amount_switch = trade_amount + 0.01
+        traed_amount_switch = trade_amount + self.init_trade_amount
 
 
         if self.cur_hold_position < 0.0:
