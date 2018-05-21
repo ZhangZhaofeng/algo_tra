@@ -57,33 +57,27 @@ class AutoTrading:
         depth =self.bitflyer_api.board(product_code = 'FX_BTC_JPY', count = 100)
         return(depth)
 
-    def get_current_price(self, numbers):
-        trade_history = self.bitflyer_api.executions(product_code = 'FX_BTC_JPY', count = 100)
+    def get_current_price(self):
+        trade_history = self.bitflyer_api.executions(product_code = 'FX_BTC_JPY', count = 50)
         total_size = 0.0
         cur_price = 0.0
+        last_price = []
         for i in trade_history:
-            total_size += i['size']
+            last_price.append(i['price'])
 
-        for i in trade_history:
-            cur_price += i['size']/total_size * i['price']
 
-        return(math.floor(cur_price))
+        return(last_price)
 
-    def judge_market(self):
+    def judge_market(self, mid_price):
         #1. judge if bull or bear
-        mid_price, sell_depth, buy_depth = self.get_price(self.get_depth(), if123 = True)
-        margin1 = mid_price * 0.00004
+        last_price = self.get_current_price()
+        margin1 = mid_price * 0.0001
         bull = False
         bear = False
-
-        buyselllastprice = self.get_last_price(self.get_last_executions())
-
-        lastprice = buyselllastprice[0][0:20]
-
-        if mid_price > max(lastprice[0:]) + margin1 and mid_price > lastprice[1]:
+        if mid_price > max(last_price[0:]) + margin1 and mid_price > last_price[1]:
             print('bull')
             bull = True
-        elif mid_price < min(lastprice[0:]) - margin1 and mid_price < lastprice[1]:
+        elif mid_price < min(last_price[0:]) - margin1 and mid_price < last_price[1]:
             print('bear')
             bear = True
 
@@ -141,7 +135,7 @@ class AutoTrading:
 
         if sell_price - mid_price < mini_diff:
             sell_price = mid_price + mini_diff
-        if mid_price - buy_price > largest_diff:
+        if mid_price - buy_price < mini_diff:
             buy_price = mid_price - mini_diff
 
             sell_price = float('%.2f' % sell_price)
@@ -156,9 +150,11 @@ if __name__ == '__main__':
     at = AutoTrading()
     depth = at.get_depth()
     results = at.get_price(depth, if123=False)
-    sell = results[0]
-    buy = results[1]
+    sell = results[1]
+    buy = results[0]
 
 
-    at.trade_simple(buy, sell)
+    mid_price = (sell + buy) / 2
+    if at.judge_market(mid_price):
+        at.trade_simple(buy, sell)
     print(results)
