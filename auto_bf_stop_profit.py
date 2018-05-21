@@ -243,9 +243,10 @@ class AutoTrading:
             self.order_id = order['parent_order_acceptance_id']
 
     # if with position give a price to stopprofit and stoploss
-    def trade_with_position(self, hi, lo):
+    def trade_with_position(self, hi, lo, curprice):
 
         profitcut_factor = 0.018
+        stoploss_factor = 0.004
         checkins = self.get_checkin_price()
         checkin_price = checkins[0]
         self.cur_hold_position = checkins[1]
@@ -254,7 +255,10 @@ class AutoTrading:
 
 
         if self.cur_hold_position < 0.0:
-            stoploss = hi
+            if curprice > hi:
+                stoploss = math.floor(curprice * (1 + stoploss_factor))
+            else:
+                stoploss = hi
             stopprofit = math.floor(checkin_price * (1 - profitcut_factor))
             if stopprofit  > hi:
                 stopprofit = hi
@@ -263,7 +267,10 @@ class AutoTrading:
             self.order_exist = True
             self.order_id = order['parent_order_acceptance_id']
         elif self.cur_hold_position > 0.0:
-            stoploss = lo
+            if curprice < lo:
+                stoploss = math.floor(curprice * (1 - stoploss_factor))
+            else:
+                stoploss = lo
             stopprofit = math.floor(checkin_price * (1 + profitcut_factor))
             if stopprofit  < lo:
                 stopprofit = lo
@@ -347,16 +354,16 @@ class AutoTrading:
             remain_test = self.cancel_order(self.order_id) + 1
             print('cancel order, remain %f'%(remain_test -1))
 
-
+        cur_price = self.get_current_price(100)
+        predict.print_and_write('current price is %f' % (cur_price))
         checkins = self.get_checkin_price()
         # if not position exist trade none position
         if checkins[1] == 0.0:
             predict.print_and_write('No position exist, trade none position')
-            cur_price = self.get_current_price(100)
             result = self.get_hilo()
             hi = result[1]
             lo = result[0]
-            predict.print_and_write('current price is %f'%(cur_price))
+
             self.trade_none_position(cur_price, hi ,lo)
 
         # else trade in position
@@ -367,7 +374,7 @@ class AutoTrading:
             result = self.get_hilo()
             hi = result[1]
             lo = result[0]
-            self.trade_with_position(hi, lo)
+            self.trade_with_position(hi, lo, cur_price)
 
 if __name__ == '__main__':
     autoTrading = AutoTrading()
