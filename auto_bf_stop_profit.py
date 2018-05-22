@@ -1,6 +1,7 @@
 from tradingapis.bitflyer_api import pybitflyer
 import keysecret as ks
 import time
+import datetime
 import predict
 import configIO
 import sys
@@ -171,8 +172,56 @@ class AutoTrading:
 
         return (order)
 
+    def trade_oco3(self, po, stopprofit, stoploss, amount, switch):
+        self.maintance_time()
+        product = 'FX_BTC_JPY'
+        print('trade bitflyer')
+        expire_time = 75
+
+        if po == 'long':
+            parameters = [{'product_code': product, 'condition_type': 'LIMIT', 'side': 'SELL',
+                           'size': str(amount), 'price': str(stopprofit)},
+                          {'product_code': product, 'condition_type': 'STOP_LIMIT', 'side': 'SELL',
+                           'size': str(switch), 'trigger_price': str(stoploss-200), 'price': str(stoploss+100)},
+                          ]
+            order = self.bitflyer_api.sendparentorder(order_method='OCO', minute_to_expire=expire_time,
+                                                      parameters=parameters)
+            data2csv.data2csv(
+                [time.strftime('%b:%d:%H:%M'), 'order', 'OCO_SELL_LIMIT_STOP(inhour)', 'amount', '%f' % float(amount),
+                 'stopprofit',
+                 '%f' % float(stopprofit), 'stoploss', '%f' % float(stoploss)])
+
+
+        elif po == 'short':
+            parameters = [{'product_code': product, 'condition_type': 'LIMIT', 'side': 'BUY',
+                           'size': str(amount), 'price': str(stopprofit)},
+                          {'product_code': product, 'condition_type': 'STOP_LIMIT', 'side': 'BUY',
+                           'size': str(switch), 'trigger_price': str(stoploss+200), 'price': str(stoploss-100)},
+                          ]
+            order = self.bitflyer_api.sendparentorder(order_method='OCO', minute_to_expire=expire_time,
+                                                      parameters=parameters)
+            data2csv.data2csv(
+                [time.strftime('%b:%d:%H:%M'), 'order', 'OCO_BUY_LIMIT_STOP(inhour)', 'amount', '%f' % float(amount),
+                 'stopprofit',
+                 '%f' % float(stopprofit), 'stoploss', '%f' % float(stoploss)])
+
+        return (order)
+
     def print_order(self, order):
         predict.print_and_write(order)
+
+    # judge if the time stamp in this hour
+    def bf_timejudge(self, timestring):
+        position_time = time.strptime(timestring, '%Y-%m-%dT%H:%M:%S.%f')
+        cur_time = time.gmtime()
+        #time.sleep(10)
+        #cur_time2 = time.gmtime()
+        a = time.mktime(position_time)
+        b = time.mktime(cur_time)
+        tdelta = b - a
+        return(tdelta)
+
+
 
     def get_checkin_price(self):
         p = self.bitflyer_api.getpositions(product_code='FX_BTC_JPY')
@@ -191,10 +240,15 @@ class AutoTrading:
                 checkin_price += i['size']/abs(position0) * i['price']
             predict.print_and_write('Check in price: %f, position: %f' % (checkin_price, position0))
 
+            for i in p:
+                opentime = i['open_date']
+                time_diff = self.bf_timejudge(opentime)
+                break
+
         elif isinstance(p, dict) or len(p) == 0:
             predict.print_and_write('Position not exist')
 
-        return([checkin_price, position0])
+        return([checkin_price, position0, time_diff])
 
     def get_current_price(self, numbers):
         trade_history = self.bitflyer_api.executions(product_code = 'FX_BTC_JPY', count = 100)
@@ -242,32 +296,42 @@ class AutoTrading:
             self.order_exist = True
             self.order_id = order['parent_order_acceptance_id']
 
+
     # if with position give a price to stopprofit and stoploss
     def trade_with_position(self, hi, lo):
 
-        profitcut_factor = 0.018
+        profitcut_factor = 0.023
         checkins = self.get_checkin_price()
         checkin_price = checkins[0]
         self.cur_hold_position = checkins[1]
+        time_diff = abs(checkins[2])
         trade_amount = abs(self.cur_hold_position)
         traed_amount_switch = trade_amount + self.init_trade_amount
 
 
         if self.cur_hold_position < 0.0:
-            stoploss = hi
             stopprofit = math.floor(checkin_price * (1 - profitcut_factor))
-            if stopprofit  > hi:
+            if stopprofit > hi:
                 stopprofit = hi
-            order = self.trade_oco2('short', stopprofit, stoploss, trade_amount, traed_amount_switch)
+            if time_diff < 3600:
+                stoploss = lo
+                order = self.trade_oco3('short', stopprofit, stoploss, trade_amount, traed_amount_switch)
+            else:
+                stoploss = hi
+                order = self.trade_oco2('short', stopprofit, stoploss, trade_amount, traed_amount_switch)
             self.print_order(order)
             self.order_exist = True
             self.order_id = order['parent_order_acceptance_id']
         elif self.cur_hold_position > 0.0:
-            stoploss = lo
             stopprofit = math.floor(checkin_price * (1 + profitcut_factor))
             if stopprofit  < lo:
                 stopprofit = lo
-            order = self.trade_oco2('long', stopprofit, stoploss, trade_amount, traed_amount_switch)
+            if time_diff < 3600:
+                stoploss = hi
+                order = self.trade_oco3('long', stopprofit, stoploss, trade_amount, traed_amount_switch)
+            else:
+                stoploss = lo
+                order = self.trade_oco2('long', stopprofit, stoploss, trade_amount, traed_amount_switch)
             self.print_order(order)
             self.order_exist = True
             self.order_id = order['parent_order_acceptance_id']
@@ -367,10 +431,12 @@ class AutoTrading:
             result = self.get_hilo()
             hi = result[1]
             lo = result[0]
+            close = result[2]
             self.trade_with_position(hi, lo)
 
 if __name__ == '__main__':
     autoTrading = AutoTrading()
+    #tdelta = autoTrading.bf_timejudge('2018-05-21T14:35:44.713')
     while 1:
         autoTrading.judge_condition()
         time.sleep(600)
