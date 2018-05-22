@@ -10,6 +10,7 @@ import data2csv
 
 
 class AutoTrading:
+    amount = 0.02
     def __init__(self):
         print("Initializing API")
         self.bitflyer_api = pybitflyer.API(api_key=str(ks.bitflyer_api), api_secret=str(ks.bitflyer_secret))
@@ -25,7 +26,7 @@ class AutoTrading:
             else:
                 return
 
-    def trade_simple(self, buy, sell, amount = 0.01):
+    def trade_simple(self, buy, sell, amount = amount):
         self.maintance_time()
 
         product = 'FX_BTC_JPY'
@@ -64,14 +65,12 @@ class AutoTrading:
         last_price = []
         for i in trade_history:
             last_price.append(i['price'])
-
-
         return(last_price)
 
     def judge_market(self, mid_price):
         #1. judge if bull or bear
         last_price = self.get_current_price()
-        margin1 = mid_price * 0.0001
+        margin1 = mid_price * 0.0003
         bull = False
         bear = False
         if mid_price > max(last_price[0:]) + margin1 and mid_price > last_price[1]:
@@ -85,6 +84,15 @@ class AutoTrading:
             return False
         else:
             return True
+
+    def judge_if_enough_mergin(self, ref_price, amount = amount*2):
+        result = self.bitflyer_api.getcollateral()
+        last_collateral = result['collateral'] -  result['require_collateral']
+        predict.print_and_write('collateral: %f, last collateral: %f'%(result['collateral'], last_collateral))
+        if last_collateral > ref_price * amount * 1.001:
+            return(True)
+        else:
+            return(False)
 
     def get_price(self, depth, if123=False):
         asks = depth['asks'][:30]
@@ -100,10 +108,10 @@ class AutoTrading:
         buy_price3 = float(bids[2]['price'])
         amount_asks = 0.0
         amount_bids = 0.0
-        largest_diff = 400
-        mini_diff = 200
-        float_amount_buy = 0.01
-        float_amount_sell = 0.01
+        largest_diff = 200
+        mini_diff = 50
+        float_amount_buy = 0.1
+        float_amount_sell = 0.1
         buy_depth = 0.0
         sell_depth = 0.0
 
@@ -146,15 +154,69 @@ class AutoTrading:
         else:
             return ([buy_price, sell_price])
 
+
+    def get_checkin_price(self):
+        p = self.bitflyer_api.getpositions(product_code='FX_BTC_JPY')
+        position0 = 0.0
+        checkin_price = 0.0
+        if isinstance(p, list):
+            for i in p:
+                #predict.print_and_write('check in price: %f' % (i['price']))
+
+                if i['side'] == 'SELL':
+                    position0 -= i['size']
+                else:
+                    position0 += i['size']
+
+            for i in p:
+                checkin_price += i['size']/abs(position0) * i['price']
+            predict.print_and_write('Check in price: %f, position: %f' % (checkin_price, position0))
+
+
+        elif isinstance(p, dict) or len(p) == 0:
+            predict.print_and_write('Position not exist')
+
+        return([checkin_price, position0])
+
+    def trade_checkin(self, checkin_price, position):
+        if position > 0:
+            type = 'SELL'
+        elif position < 0:
+            type = 'BUY'
+
+        product = 'FX_BTC_JPY'
+        print('trade bitflyer, %s: %f' % (type))
+        expire_time = 75
+        order = self.bitflyer_api.sendchildorder(product_code='FX_BTC_JPY',
+                                                 child_order_type='LIMIT',
+                                                 side=type,
+                                                 size=position,
+                                                 price='%.0f' % checkin_price,
+                                                 minute_to_expire=75)
+
+
 if __name__ == '__main__':
-    at = AutoTrading()
-    depth = at.get_depth()
-    results = at.get_price(depth, if123=False)
-    sell = results[1]
-    buy = results[0]
+    stop_flag = 0
+    while 1:
+
+        at = AutoTrading()
+        checkins = at.get_checkin_price()
+        print(checkins)
+        depth = at.get_depth()
+        results = at.get_price(depth, if123=False)
+        sell = results[1]
+        buy = results[0]
 
 
-    mid_price = (sell + buy) / 2
-    if at.judge_market(mid_price):
-        at.trade_simple(buy, sell)
-    print(results)
+        mid_price = (sell + buy) / 2
+        if at.judge_market(mid_price) and at.judge_if_enough_mergin(mid_price):
+            at.trade_simple(buy, sell)
+        else:
+            stop_flag +=1
+            if stop_flag > 3:
+                at.bitflyer_api.cancelallchildorders(product_code = 'FX_BTC_JPY')
+                time.sleep(1)
+                at.trade_checkin(checkins[0], checkins[1])
+                stop_flag = 0
+        print(results)
+        time.sleep(20)
