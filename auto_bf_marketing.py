@@ -58,6 +58,20 @@ class AutoTrading:
         depth =self.bitflyer_api.board(product_code = 'FX_BTC_JPY', count = 100)
         return(depth)
 
+    def cal_depth_twoside(self,depth):
+        asks = depth['asks']
+        bids = depth['bids']
+        ask_size = 0.0
+        bid_size = 0.0
+        for i in asks[:30]:
+            ask_size += i['size']
+
+        for j in bids[:30]:
+            bid_size += j['size']
+
+
+        return([ask_size, bid_size])
+
     def get_current_price(self):
         trade_history = self.bitflyer_api.executions(product_code = 'FX_BTC_JPY', count = 50)
         total_size = 0.0
@@ -67,23 +81,78 @@ class AutoTrading:
             last_price.append(i['price'])
         return(last_price)
 
-    def judge_market(self, mid_price):
+    def judge_market(self, ask_bid_size):
         #1. judge if bull or bear
         last_price = self.get_current_price()
-        margin1 = last_price[-1] * 0.00005
+        margin1 = last_price[0] * 0.00005
         bull = False
         bear = False
-        if last_price[-1] > max(last_price[:-1]) + margin1:
+
+        if last_price[0] > max(last_price[1:]) + margin1:
             print('bull')
             bull = True
-        elif last_price[-1] < min(last_price[:-1]) - margin1:
+        elif last_price[0] < min(last_price[1:]) - margin1:
             print('bear')
             bear = True
 
         if bull or bear:
-            return False
-        else:
-            return True
+            return (False)
+
+        print('ask: % f, bid % f'%(ask_bid_size[0], ask_bid_size[1]))
+        if ask_bid_size[0]/ask_bid_size[1] > 2.3 or ask_bid_size[1]/ask_bid_size[0] > 2.3:
+            print('Over trading')
+            return (False)
+
+        rsi = self.get_rsi(last_price)
+        print('rsi: %f'%rsi)
+
+        if rsi <= 20 or rsi >= 80:
+            print('Obvious trend')
+            return (False)
+
+
+        return(True)
+
+    def get_rsi(self, lastprice):
+        gain = 0.0
+        loss = 0.0
+        first_window = lastprice[-15:]
+        others = lastprice[:-16]
+        price_list_len = 15
+        flag = 1
+        for i in first_window[0:15]:
+            if flag < price_list_len:
+                diff = i - lastprice[flag]
+                if diff > 0:
+                    gain += diff * 1/14
+                else:
+                    loss += -diff* 1/14
+                flag += 1
+
+
+        gains = []
+        losses = []
+        gains.append(gain)
+        losses.append(loss)
+        others_len = len(others)
+        for j in range(0, others_len):
+            cur_index = others_len -j -1
+            diff = lastprice[cur_index] - lastprice[cur_index+1]
+            if diff > 0:
+                gain = (gain * 13 + diff) / 14
+                loss = (loss * 13) / 14
+            else:
+                loss = (loss * 13 - diff) / 14
+                gain = (gain * 13) / 14
+            gains.append(gain)
+            losses.append(loss)
+
+
+        if loss == 0.0:
+            loss = 0.001
+        rs = gain / loss
+        rsi = 100-(100/(1+rs))
+        return(rsi)
 
     def judge_if_enough_mergin(self, ref_price, amount = amount*2):
         result = self.bitflyer_api.getcollateral()
@@ -192,9 +261,9 @@ class AutoTrading:
         expire_time = 999
 
         parameters = [{'product_code': product, 'condition_type': 'LIMIT', 'side': type,
-                       'size': abs(position), 'price': '%.0f' % checkin_price},
+                       'size': '%.2f'%abs(position), 'price': '%.0f' % checkin_price},
                       {'product_code': product, 'condition_type': 'STOP', 'side': type,
-                       'size': abs(position), 'trigger_price': '%.0f' %loss_cut},
+                       'size': '%.2f'%abs(position), 'trigger_price': '%.0f' %loss_cut},
                       ]
         order = self.bitflyer_api.sendparentorder(order_method='OCO', minute_to_expire=expire_time,
                                                   parameters=parameters)
@@ -209,15 +278,21 @@ if __name__ == '__main__':
         checkins = at.get_checkin_price()
         print(checkins)
         depth = at.get_depth()
+        ask_bid_size = at.cal_depth_twoside(depth)
+        #r = at.judge_market(ask_bid_size)
+
         results = at.get_price(depth, if123=False)
         sell = results[1]
         buy = results[0]
 
 
         mid_price = (sell + buy) / 2
-        if at.judge_market(mid_price) and at.judge_if_enough_mergin(mid_price):
+        enough_mergin = at.judge_if_enough_mergin(mid_price)
+        if at.judge_market(ask_bid_size) and enough_mergin:
             at.trade_simple(buy, sell)
-        else:
+            stop_flag = 0
+        elif not enough_mergin:
+            print('Mergin is not enough')
             stop_flag +=1
             if stop_flag > 1:
                 at.bitflyer_api.cancelallchildorders(product_code = 'FX_BTC_JPY')
