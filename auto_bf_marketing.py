@@ -70,13 +70,13 @@ class AutoTrading:
     def judge_market(self, mid_price):
         #1. judge if bull or bear
         last_price = self.get_current_price()
-        margin1 = mid_price * 0.0003
+        margin1 = last_price[-1] * 0.00005
         bull = False
         bear = False
-        if mid_price > max(last_price[0:]) + margin1 and mid_price > last_price[1]:
+        if last_price[-1] > max(last_price[:-1]) + margin1:
             print('bull')
             bull = True
-        elif mid_price < min(last_price[0:]) - margin1 and mid_price < last_price[1]:
+        elif last_price[-1] < min(last_price[:-1]) - margin1:
             print('bear')
             bear = True
 
@@ -179,20 +179,26 @@ class AutoTrading:
         return([checkin_price, position0])
 
     def trade_checkin(self, checkin_price, position):
+        loss_factor = 0.002
         if position > 0:
             type = 'SELL'
+            loss_cut = checkin_price * (1- loss_factor)
         elif position < 0:
             type = 'BUY'
+            loss_cut = checkin_price * (1 + loss_factor)
 
         product = 'FX_BTC_JPY'
-        print('trade bitflyer, %s: %f' % (type))
-        expire_time = 75
-        order = self.bitflyer_api.sendchildorder(product_code='FX_BTC_JPY',
-                                                 child_order_type='LIMIT',
-                                                 side=type,
-                                                 size=position,
-                                                 price='%.0f' % checkin_price,
-                                                 minute_to_expire=75)
+        print('trade bitflyer, %s: %f' % (type, position))
+        expire_time = 999
+
+        parameters = [{'product_code': product, 'condition_type': 'LIMIT', 'side': type,
+                       'size': abs(position), 'price': '%.0f' % checkin_price},
+                      {'product_code': product, 'condition_type': 'STOP', 'side': type,
+                       'size': abs(position), 'trigger_price': '%.0f' %loss_cut},
+                      ]
+        order = self.bitflyer_api.sendparentorder(order_method='OCO', minute_to_expire=expire_time,
+                                                  parameters=parameters)
+        print(order)
 
 
 if __name__ == '__main__':
@@ -213,10 +219,19 @@ if __name__ == '__main__':
             at.trade_simple(buy, sell)
         else:
             stop_flag +=1
-            if stop_flag > 3:
+            if stop_flag > 1:
                 at.bitflyer_api.cancelallchildorders(product_code = 'FX_BTC_JPY')
-                time.sleep(1)
+                time.sleep(20)
+
                 at.trade_checkin(checkins[0], checkins[1])
+                time.sleep(20)
+                while not at.judge_if_enough_mergin(mid_price):
+                    print('waiting for trade off')
+                    time.sleep(20)
                 stop_flag = 0
         print(results)
-        time.sleep(20)
+        i = 1
+        while i < 4:
+            print('.')
+            time.sleep(5)
+            i += 1
