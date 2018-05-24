@@ -11,6 +11,10 @@ import data2csv
 
 class AutoTrading:
     amount = 0.02
+    mid_prices = [0,0,0,0]
+    mid_price_index = 0
+
+
     def __init__(self):
         print("Initializing API")
         self.bitflyer_api = pybitflyer.API(api_key=str(ks.bitflyer_api), api_secret=str(ks.bitflyer_secret))
@@ -73,7 +77,7 @@ class AutoTrading:
         return([ask_size, bid_size])
 
     def get_current_price(self):
-        trade_history = self.bitflyer_api.executions(product_code = 'FX_BTC_JPY', count = 50)
+        trade_history = self.bitflyer_api.executions(product_code = 'FX_BTC_JPY', count = 1000)
         total_size = 0.0
         cur_price = 0.0
         last_price = []
@@ -88,10 +92,10 @@ class AutoTrading:
         bull = False
         bear = False
 
-        if last_price[0] > max(last_price[1:]) + margin1:
+        if last_price[0] > max(last_price[1:200]) + margin1:
             print('bull')
             bull = True
-        elif last_price[0] < min(last_price[1:]) - margin1:
+        elif last_price[0] < min(last_price[1:200]) - margin1:
             print('bear')
             bear = True
 
@@ -99,7 +103,7 @@ class AutoTrading:
             return (False)
 
         print('ask: % f, bid % f'%(ask_bid_size[0], ask_bid_size[1]))
-        if ask_bid_size[0]/ask_bid_size[1] > 2.3 or ask_bid_size[1]/ask_bid_size[0] > 2.3:
+        if (ask_bid_size[0]> 20 or ask_bid_size[1]>20) and (ask_bid_size[0]/ask_bid_size[1] > 2.3 or ask_bid_size[1]/ask_bid_size[0] > 2.3):
             print('Over trading')
             return (False)
 
@@ -269,12 +273,36 @@ class AutoTrading:
                                                   parameters=parameters)
         print(order)
 
+    def judge_mid_price(self, mid_price):
+
+        if self.mid_price_index > 3:
+            diff = [0,0,0]
+            self.mid_prices[0] = self.mid_prices[1]
+            self.mid_prices[1] = self.mid_prices[2]
+            self.mid_prices[2] = self.mid_prices[3]
+            self.mid_prices[3] = mid_price
+            diff[0] = self.mid_prices[1] - self.mid_prices[0]
+            diff[1] = self.mid_prices[2] - self.mid_prices[1]
+            diff[2] = self.mid_prices[3] - self.mid_prices[2]
+            if (diff[0]>0 and diff[1] > 0 and diff[2] > 0 ) or (diff[0]<0 and diff[1] < 0 and diff[2] < 0 ):
+                if abs(diff[0] + diff[1] + diff[2]) > 300:
+                    print('Big change')
+                    return False
+        else:
+            self.mid_prices[self.mid_price_index] = mid_price
+            self.mid_price_index += 1
+        return True
+
+        self.mid_price_index += 1
+
+
 
 if __name__ == '__main__':
     stop_flag = 0
+    at = AutoTrading()
     while 1:
 
-        at = AutoTrading()
+
         checkins = at.get_checkin_price()
         print(checkins)
         depth = at.get_depth()
@@ -287,8 +315,9 @@ if __name__ == '__main__':
 
 
         mid_price = (sell + buy) / 2
+
         enough_mergin = at.judge_if_enough_mergin(mid_price)
-        if at.judge_market(ask_bid_size) and enough_mergin:
+        if at.judge_market(ask_bid_size) and enough_mergin and at.judge_mid_price(mid_price):
             at.trade_simple(buy, sell)
             stop_flag = 0
         elif not enough_mergin:
