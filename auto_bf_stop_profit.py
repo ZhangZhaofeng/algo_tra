@@ -75,51 +75,57 @@ class AutoTrading:
         product= 'FX_BTC_JPY'
         print('trade bitflyer')
         expire_time = 75
-        if limitorstop == 'stop':
-            if type == 'BUY' or type == 'buy':
+        try_t = 0
+        while try_t < 10:
+            if limitorstop == 'stop':
+                if type == 'BUY' or type == 'buy':
             # order = self.quoinex_api.create_market_buy(product_id=5, quantity=str(amount), price_range=str(buysellprice))
-                parameters =  [{'product_code': product, 'condition_type': 'STOP', 'side': 'BUY', 'size': str(amount),
+                    parameters =  [{'product_code': product, 'condition_type': 'STOP', 'side': 'BUY', 'size': str(amount),
                             'trigger_price': str(trigger)}]
-                order = self.bitflyer_api.sendparentorder(order_method='SIMPLE', minute_to_expire=expire_time, parameters=parameters)
-                data2csv.data2csv(
-                    [time.strftime('%b:%d:%H:%M'), 'order', 'BUY_STOP', 'amount', '%f' % float(amount), 'trigger', '%f' % float(trigger)])
-            elif type == "SELL" or type == "sell":
-                parameters = [{'product_code': product, 'condition_type': 'STOP', 'side': 'SELL', 'size': str(amount),
+                    order = self.bitflyer_api.sendparentorder(order_method='SIMPLE', minute_to_expire=expire_time, parameters=parameters)
+                    data2csv.data2csv(
+                        [time.strftime('%b:%d:%H:%M'), 'order', 'BUY_STOP', 'amount', '%f' % float(amount), 'trigger', '%f' % float(trigger)])
+                elif type == "SELL" or type == "sell":
+                    parameters = [{'product_code': product, 'condition_type': 'STOP', 'side': 'SELL', 'size': str(amount),
                            'trigger_price': str(trigger)}]
-                order = self.bitflyer_api.sendparentorder(order_method='SIMPLE', minute_to_expire=expire_time, parameters=parameters)
-                data2csv.data2csv(
-                    [time.strftime('%b:%d:%H:%M'), 'order', 'SELL_STOP', 'amount',  '%f' % float(amount), 'trigger', '%f' % float(trigger)])
-        elif limitorstop == 'stop_limit':
-            if type == 'BUY' or type == 'buy':
-                parameters = [{ 'product_code' : product, 'condition_type' : 'STOP_LIMIT', 'side': 'BUY',
+                    order = self.bitflyer_api.sendparentorder(order_method='SIMPLE', minute_to_expire=expire_time, parameters=parameters)
+                    data2csv.data2csv(
+                        [time.strftime('%b:%d:%H:%M'), 'order', 'SELL_STOP', 'amount',  '%f' % float(amount), 'trigger', '%f' % float(trigger)])
+            elif limitorstop == 'stop_limit':
+                if type == 'BUY' or type == 'buy':
+                    parameters = [{ 'product_code' : product, 'condition_type' : 'STOP_LIMIT', 'side': 'BUY',
                                  'price': str(limit), 'size': str(amount), 'trigger_price': str(trigger)}]
-                order = self.bitflyer_api.sendparentorder(order_method='SIMPLE', minute_to_expire=expire_time, parameters=parameters)
-                data2csv.data2csv(
-                    [time.strftime('%b:%d:%H:%M'), 'order', 'BUY_STOPLIMIT', 'amount', '%f' % float(amount), 'limit', '%f'% float(limit), 'trigger', '%f' % float(trigger)])
-            elif type == "SELL" or type == "sell":
-                parameters = [{'product_code': product, 'condition_type': 'STOP_LIMIT', 'side': 'SELL',
+                    order = self.bitflyer_api.sendparentorder(order_method='SIMPLE', minute_to_expire=expire_time, parameters=parameters)
+                    data2csv.data2csv(
+                        [time.strftime('%b:%d:%H:%M'), 'order', 'BUY_STOPLIMIT', 'amount', '%f' % float(amount), 'limit', '%f'% float(limit), 'trigger', '%f' % float(trigger)])
+                elif type == "SELL" or type == "sell":
+                    parameters = [{'product_code': product, 'condition_type': 'STOP_LIMIT', 'side': 'SELL',
                                 'price': str(limit), 'size': str(amount), 'trigger_price': str(trigger)}]
-                order = self.bitflyer_api.sendparentorder(order_method='SIMPLE', minute_to_expire=expire_time, parameters=parameters)
-                data2csv.data2csv(
-                    [time.strftime('%b:%d:%H:%M'), 'order', 'SELL_STOPLIMIT', 'amount', '%f' % float(amount), 'limit', '%f' % float(limit), 'trigger', '%f' % float(trigger)])
-        elif limitorstop == 'limit':
-            if type == 'BUY' or type == 'buy':
-                parameters = [{ 'product_code' : product, 'condition_type' : 'LIMIT', 'side': 'BUY',
+                    order = self.bitflyer_api.sendparentorder(order_method='SIMPLE', minute_to_expire=expire_time, parameters=parameters)
+                    data2csv.data2csv(
+                        [time.strftime('%b:%d:%H:%M'), 'order', 'SELL_STOPLIMIT', 'amount', '%f' % float(amount), 'limit', '%f' % float(limit), 'trigger', '%f' % float(trigger)])
+            elif limitorstop == 'limit':
+                if type == 'BUY' or type == 'buy':
+                    parameters = [{ 'product_code' : product, 'condition_type' : 'LIMIT', 'side': 'BUY',
                                  'price': str(limit), 'size': str(amount)}]
-                order = self.bitflyer_api.sendparentorder(order_method='SIMPLE', minute_to_expire=expire_time, parameters=parameters)
-                data2csv.data2csv(
-                    [time.strftime('%b:%d:%H:%M'), 'order', 'BUY_LIMIT', 'amount', '%f' % float(amount), 'limit', '%f' % float(limit)])
-            elif type == "SELL" or type == "sell":
-                parameters = [{'product_code': product, 'condition_type': 'LIMIT', 'side': 'SELL',
+                    order = self.bitflyer_api.sendparentorder(order_method='SIMPLE', minute_to_expire=expire_time, parameters=parameters)
+                    data2csv.data2csv(
+                        [time.strftime('%b:%d:%H:%M'), 'order', 'BUY_LIMIT', 'amount', '%f' % float(amount), 'limit', '%f' % float(limit)])
+                elif type == "SELL" or type == "sell":
+                    parameters = [{'product_code': product, 'condition_type': 'LIMIT', 'side': 'SELL',
                                 'price': str(limit), 'size': str(amount)}]
-                order = self.bitflyer_api.sendparentorder(order_method='SIMPLE', minute_to_expire=expire_time, parameters=parameters)
-                data2csv.data2csv(
-                    [time.strftime('%b:%d:%H:%M'), 'order', 'SELL_LIMIT', 'amount', '%f' % float(amount), 'limit', '%f' % float(limit)])
-        else:
-            print("error!")
-
-
-        return (order)
+                    order = self.bitflyer_api.sendparentorder(order_method='SIMPLE', minute_to_expire=expire_time, parameters=parameters)
+                    data2csv.data2csv(
+                        [time.strftime('%b:%d:%H:%M'), 'order', 'SELL_LIMIT', 'amount', '%f' % float(amount), 'limit', '%f' % float(limit)])
+            else:
+                print("error!")
+            if 'parent_order_acceptance_id' in order:
+                return (order)
+            else:
+                try_t += 1
+                print(order)
+                print('Failed, try again')
+                time.sleep(20)
 
     # trade oco while no position
     def trade_oco1(self, buy, sell, amount):
@@ -127,16 +133,25 @@ class AutoTrading:
         product = 'FX_BTC_JPY'
         print('trade bitflyer')
         expire_time = 75
-        parameters = [{'product_code': product, 'condition_type': 'STOP', 'side': 'BUY',
+        try_t = 0
+        while try_t < 10:
+            parameters = [{'product_code': product, 'condition_type': 'STOP', 'side': 'BUY',
                        'size': str(amount), 'trigger_price': str(buy)},
                       {'product_code': product, 'condition_type': 'STOP', 'side': 'SELL',
                        'size': str(amount), 'trigger_price': str(sell)},
                       ]
-        order = self.bitflyer_api.sendparentorder(order_method='OCO', minute_to_expire=expire_time,
+            order = self.bitflyer_api.sendparentorder(order_method='OCO', minute_to_expire=expire_time,
                                                   parameters=parameters)
-        data2csv.data2csv(
-            [time.strftime('%b:%d:%H:%M'), 'order', 'OCO_STOP', 'amount', '%f' % float(amount), 'buy', '%f' % float(buy), 'sell', '%f' % float(sell)])
-        return (order)
+            data2csv.data2csv(
+                [time.strftime('%b:%d:%H:%M'), 'order', 'OCO_STOP', 'amount', '%f' % float(amount), 'buy', '%f' % float(buy), 'sell', '%f' % float(sell)])
+
+            if 'parent_order_acceptance_id' in order:
+                return (order)
+            else:
+                try_t += 1
+                print(order)
+                print('Failed, try again')
+                time.sleep(20)
 
     # trade oco with position
     def trade_oco2(self, po, stopprofit, stoploss, amount , switch):
@@ -144,68 +159,85 @@ class AutoTrading:
         product = 'FX_BTC_JPY'
         print('trade bitflyer')
         expire_time = 75
+        try_t = 0
+        while try_t<10:
 
-        if po == 'long':
-            parameters = [{'product_code': product, 'condition_type': 'LIMIT', 'side': 'SELL',
+            if po == 'long':
+                parameters = [{'product_code': product, 'condition_type': 'LIMIT', 'side': 'SELL',
                        'size': str(amount), 'price': str(stopprofit)},
                       {'product_code': product, 'condition_type': 'STOP', 'side': 'SELL',
                        'size': str(switch), 'trigger_price': str(stoploss)},
                       ]
-            order = self.bitflyer_api.sendparentorder(order_method='OCO', minute_to_expire=expire_time,
+                order = self.bitflyer_api.sendparentorder(order_method='OCO', minute_to_expire=expire_time,
                                                   parameters=parameters)
-            data2csv.data2csv(
-                [time.strftime('%b:%d:%H:%M'), 'order', 'OCO_SELL_LIMIT_STOP', 'amount', '%f' % float(amount), 'stopprofit',
-                 '%f' % float(stopprofit), 'stoploss', '%f' % float(stoploss)])
+                data2csv.data2csv(
+                    [time.strftime('%b:%d:%H:%M'), 'order', 'OCO_SELL_LIMIT_STOP', 'amount', '%f' % float(amount), 'stopprofit',
+                    '%f' % float(stopprofit), 'stoploss', '%f' % float(stoploss)])
 
 
-        elif po == 'short':
-            parameters = [{'product_code': product, 'condition_type': 'LIMIT', 'side': 'BUY',
+            elif po == 'short':
+                parameters = [{'product_code': product, 'condition_type': 'LIMIT', 'side': 'BUY',
                            'size': str(amount), 'price': str(stopprofit)},
                           {'product_code': product, 'condition_type': 'STOP', 'side': 'BUY',
                            'size': str(switch), 'trigger_price': str(stoploss)},
                           ]
-            order = self.bitflyer_api.sendparentorder(order_method='OCO', minute_to_expire=expire_time,
+                order = self.bitflyer_api.sendparentorder(order_method='OCO', minute_to_expire=expire_time,
                                                       parameters=parameters)
-            data2csv.data2csv(
-                [time.strftime('%b:%d:%H:%M'), 'order', 'OCO_BUY_LIMIT_STOP', 'amount', '%f' % float(amount), 'stopprofit',
-                 '%f' % float(stopprofit), 'stoploss', '%f' % float(stoploss)])
+                data2csv.data2csv(
+                    [time.strftime('%b:%d:%H:%M'), 'order', 'OCO_BUY_LIMIT_STOP', 'amount', '%f' % float(amount), 'stopprofit',
+                    '%f' % float(stopprofit), 'stoploss', '%f' % float(stoploss)])
 
-        return (order)
+            if 'parent_order_acceptance_id' in order:
+                return (order)
+            else:
+                try_t +=1
+                print(order)
+                print('Failed, try again')
+                time.sleep(20)
+
+
 
     def trade_oco3(self, po, stopprofit, stoploss, amount, switch):
         self.maintance_time()
         product = 'FX_BTC_JPY'
         print('trade bitflyer')
         expire_time = 75
-
-        if po == 'long':
-            parameters = [{'product_code': product, 'condition_type': 'LIMIT', 'side': 'SELL',
+        try_t = 0
+        while try_t < 10:
+            if po == 'long':
+                parameters = [{'product_code': product, 'condition_type': 'LIMIT', 'side': 'SELL',
                            'size': str(amount), 'price': str(stopprofit)},
                           {'product_code': product, 'condition_type': 'STOP_LIMIT', 'side': 'SELL',
                            'size': str(switch), 'trigger_price': str(stoploss-200), 'price': str(stoploss+100)},
                           ]
-            order = self.bitflyer_api.sendparentorder(order_method='OCO', minute_to_expire=expire_time,
+                order = self.bitflyer_api.sendparentorder(order_method='OCO', minute_to_expire=expire_time,
                                                       parameters=parameters)
-            data2csv.data2csv(
-                [time.strftime('%b:%d:%H:%M'), 'order', 'OCO_SELL_LIMIT_STOP(inhour)', 'amount', '%f' % float(amount),
-                 'stopprofit',
-                 '%f' % float(stopprofit), 'stoploss', '%f' % float(stoploss)])
+                data2csv.data2csv(
+                    [time.strftime('%b:%d:%H:%M'), 'order', 'OCO_SELL_LIMIT_STOP(inhour)', 'amount', '%f' % float(amount),
+                    'stopprofit',
+                    '%f' % float(stopprofit), 'stoploss', '%f' % float(stoploss)])
 
 
-        elif po == 'short':
-            parameters = [{'product_code': product, 'condition_type': 'LIMIT', 'side': 'BUY',
+            elif po == 'short':
+                parameters = [{'product_code': product, 'condition_type': 'LIMIT', 'side': 'BUY',
                            'size': str(amount), 'price': str(stopprofit)},
                           {'product_code': product, 'condition_type': 'STOP_LIMIT', 'side': 'BUY',
                            'size': str(switch), 'trigger_price': str(stoploss+200), 'price': str(stoploss-100)},
                           ]
-            order = self.bitflyer_api.sendparentorder(order_method='OCO', minute_to_expire=expire_time,
+                order = self.bitflyer_api.sendparentorder(order_method='OCO', minute_to_expire=expire_time,
                                                       parameters=parameters)
-            data2csv.data2csv(
-                [time.strftime('%b:%d:%H:%M'), 'order', 'OCO_BUY_LIMIT_STOP(inhour)', 'amount', '%f' % float(amount),
-                 'stopprofit',
-                 '%f' % float(stopprofit), 'stoploss', '%f' % float(stoploss)])
+                data2csv.data2csv(
+                    [time.strftime('%b:%d:%H:%M'), 'order', 'OCO_BUY_LIMIT_STOP(inhour)', 'amount', '%f' % float(amount),
+                    'stopprofit',
+                    '%f' % float(stopprofit), 'stoploss', '%f' % float(stoploss)])
 
-        return (order)
+            if 'parent_order_acceptance_id' in order:
+                return (order)
+            else:
+                try_t += 1
+                print(order)
+                print('Failed, try again')
+                time.sleep(20)
 
     def print_order(self, order):
         predict.print_and_write(order)
