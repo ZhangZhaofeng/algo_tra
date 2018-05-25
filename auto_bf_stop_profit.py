@@ -52,7 +52,7 @@ class AutoTrading:
     cur_find_direction = 'none'
     order_exist = False
     order_id = ''
-    init_trade_amount = 0.03
+    init_trade_amount = 0.05
 
     def __init__(self):
         print("Initializing API")
@@ -227,7 +227,6 @@ class AutoTrading:
         p = self.bitflyer_api.getpositions(product_code='FX_BTC_JPY')
         position0 = 0.0
         checkin_price = 0.0
-        time_diff = 0.0
         if isinstance(p, list):
             for i in p:
                 #predict.print_and_write('check in price: %f' % (i['price']))
@@ -301,7 +300,7 @@ class AutoTrading:
     # if with position give a price to stopprofit and stoploss
     def trade_with_position(self, hi, lo):
 
-        profitcut_factor = 0.023
+        profitcut_factor = 0.1
         checkins = self.get_checkin_price()
         checkin_price = checkins[0]
         self.cur_hold_position = checkins[1]
