@@ -335,7 +335,7 @@ class AutoTrading:
         profitcut_factor = 0.1
         checkins = self.get_checkin_price()
         checkin_price = checkins[0]
-        self.cur_hold_position = checkins[1]
+        self.cur_hold_position = math.floor(checkins[1] * 100)/100
         time_diff = abs(checkins[2])
         trade_amount = abs(self.cur_hold_position)
         traed_amount_switch = trade_amount + self.init_trade_amount
