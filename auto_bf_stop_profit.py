@@ -330,12 +330,12 @@ class AutoTrading:
 
 
     # if with position give a price to stopprofit and stoploss
-    def trade_with_position(self, hi, lo):
+    def trade_with_position(self, hi, lo, close):
 
         profitcut_factor = 0.1
         checkins = self.get_checkin_price()
         checkin_price = checkins[0]
-        self.cur_hold_position = math.floor(checkins[1] * 100)/100
+        self.cur_hold_position = float('%.2f'%(math.floor(checkins[1] * 100)/100))
         time_diff = abs(checkins[2])
         trade_amount = abs(self.cur_hold_position)
         traed_amount_switch = trade_amount + self.init_trade_amount
@@ -345,11 +345,11 @@ class AutoTrading:
             stopprofit = math.floor(checkin_price * (1 - profitcut_factor))
             if stopprofit > hi:
                 stopprofit = hi
-            if time_diff < 3600:
+            if time_diff < 3600 and close > hi: # new part
                 stoploss = lo
                 order = self.trade_oco3('short', stopprofit, stoploss, trade_amount, traed_amount_switch)
             else:
-                stoploss = hi
+                stoploss = hi # ?
                 order = self.trade_oco2('short', stopprofit, stoploss, trade_amount, traed_amount_switch)
             self.print_order(order)
             self.order_exist = True
@@ -358,11 +358,11 @@ class AutoTrading:
             stopprofit = math.floor(checkin_price * (1 + profitcut_factor))
             if stopprofit  < lo:
                 stopprofit = lo
-            if time_diff < 3600:
+            if time_diff < 3600 and close < lo: # new part
                 stoploss = hi
                 order = self.trade_oco3('long', stopprofit, stoploss, trade_amount, traed_amount_switch)
             else:
-                stoploss = lo
+                stoploss = lo # ?
                 order = self.trade_oco2('long', stopprofit, stoploss, trade_amount, traed_amount_switch)
             self.print_order(order)
             self.order_exist = True
@@ -464,7 +464,7 @@ class AutoTrading:
             hi = result[1]
             lo = result[0]
             close = result[2]
-            self.trade_with_position(hi, lo)
+            self.trade_with_position(hi, lo, close)
 
 if __name__ == '__main__':
     autoTrading = AutoTrading()
