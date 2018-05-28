@@ -345,7 +345,7 @@ class AutoTrading:
             stopprofit = math.floor(checkin_price * (1 - profitcut_factor))
             if stopprofit > hi:
                 stopprofit = hi
-            if time_diff < 3600 and close > hi: # new part
+            if time_diff < 3600 and close > lo: # new part
                 stoploss = lo
                 order = self.trade_oco3('short', stopprofit, stoploss, trade_amount, traed_amount_switch)
             else:
@@ -358,7 +358,7 @@ class AutoTrading:
             stopprofit = math.floor(checkin_price * (1 + profitcut_factor))
             if stopprofit  < lo:
                 stopprofit = lo
-            if time_diff < 3600 and close < lo: # new part
+            if time_diff < 3600 and close < hi: # new part
                 stoploss = hi
                 order = self.trade_oco3('long', stopprofit, stoploss, trade_amount, traed_amount_switch)
             else:
