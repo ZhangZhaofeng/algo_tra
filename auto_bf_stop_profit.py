@@ -333,7 +333,8 @@ class AutoTrading:
     # if with position give a price to stopprofit and stoploss
     def trade_with_position(self, hi, lo, close):
 
-        profitcut_factor = 0.1
+        profitcut_factor = 0.12
+        slide = 1500
         checkins = self.get_checkin_price()
         checkin_price = checkins[0]
         self.cur_hold_position = float('%.2f'%(math.floor(checkins[1] * 100)/100))
@@ -346,11 +347,11 @@ class AutoTrading:
             stopprofit = math.floor(checkin_price * (1 - profitcut_factor))
             if stopprofit > hi:
                 stopprofit = hi
-            if time_diff < 3600 and close > lo: # new part
+            if time_diff < 3600 and close > lo: # new part: previous hours is not a low but this hour may be a low , use the low line
                 stoploss = lo
                 order = self.trade_oco3('short', stopprofit, stoploss, trade_amount, traed_amount_switch)
             else:
-                stoploss = hi # ?
+                stoploss = hi-slide # ?
                 order = self.trade_oco2('short', stopprofit, stoploss, trade_amount, traed_amount_switch)
             self.print_order(order)
             self.order_exist = True
@@ -363,7 +364,7 @@ class AutoTrading:
                 stoploss = hi
                 order = self.trade_oco3('long', stopprofit, stoploss, trade_amount, traed_amount_switch)
             else:
-                stoploss = lo # ?
+                stoploss = lo+slide # ?
                 order = self.trade_oco2('long', stopprofit, stoploss, trade_amount, traed_amount_switch)
             self.print_order(order)
             self.order_exist = True
@@ -436,8 +437,8 @@ class AutoTrading:
                 time.sleep(5)
                 print('Exception Try again cancelling')
                 i -= 1
-        predict.print_and_write('Cancel order failed')
-        return ([])
+        predict.print_and_write('Cancel failed,( May be just lag)')
+        return (0.0)
 
     def judge_condition(self):
         if self.order_exist == True:
