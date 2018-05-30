@@ -259,6 +259,7 @@ class AutoTrading:
         p = self.bitflyer_api.getpositions(product_code='FX_BTC_JPY')
         position0 = 0.0
         checkin_price = 0.0
+        time_diff = 0
         if isinstance(p, list):
             for i in p:
                 #predict.print_and_write('check in price: %f' % (i['price']))
