@@ -74,9 +74,9 @@ class AutoTrading:
 
         product= 'FX_BTC_JPY'
         print('trade bitflyer')
-        expire_time = 75
+        expire_time = 575
         try_t = 0
-        while try_t < 10:
+        while try_t < 20:
             if limitorstop == 'stop':
                 if type == 'BUY' or type == 'buy':
             # order = self.quoinex_api.create_market_buy(product_id=5, quantity=str(amount), price_range=str(buysellprice))
@@ -132,9 +132,9 @@ class AutoTrading:
         self.maintance_time()
         product = 'FX_BTC_JPY'
         print('trade bitflyer')
-        expire_time = 75
+        expire_time = 575
         try_t = 0
-        while try_t < 10:
+        while try_t < 20:
             parameters = [{'product_code': product, 'condition_type': 'STOP', 'side': 'BUY',
                        'size': str(amount), 'trigger_price': str(buy)},
                       {'product_code': product, 'condition_type': 'STOP', 'side': 'SELL',
@@ -158,9 +158,9 @@ class AutoTrading:
         self.maintance_time()
         product = 'FX_BTC_JPY'
         print('trade bitflyer')
-        expire_time = 75
+        expire_time = 575
         try_t = 0
-        while try_t<10:
+        while try_t<20:
 
             if po == 'long':
                 parameters = [{'product_code': product, 'condition_type': 'LIMIT', 'side': 'SELL',
@@ -201,9 +201,9 @@ class AutoTrading:
         self.maintance_time()
         product = 'FX_BTC_JPY'
         print('trade bitflyer')
-        expire_time = 75
+        expire_time = 575
         try_t = 0
-        while try_t < 10:
+        while try_t < 20:
             if po == 'long':
                 parameters = [{'product_code': product, 'condition_type': 'LIMIT', 'side': 'SELL',
                            'size': str(amount), 'price': str(stopprofit)},
