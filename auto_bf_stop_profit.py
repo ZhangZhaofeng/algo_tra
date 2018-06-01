@@ -239,6 +239,50 @@ class AutoTrading:
                 print('Failed, try again')
                 time.sleep(20)
 
+    def trade_oco4(self, po, stoploss, switch):
+        self.maintance_time()
+        product = 'FX_BTC_JPY'
+        print('trade bitflyer')
+        expire_time = 575
+        try_t = 0
+        catchup_trial = 0.5
+
+        while try_t < 20:
+            if po == 'long':
+                catchup_trial_price = math.floor(stoploss * (100 + catchup_trial) / 100)
+                parameters = [{'product_code': product, 'condition_type': 'STOP_LIMIT', 'side': 'SELL',
+                           'size': str(switch), 'trigger_price': str(stoploss-200), 'price': str(stoploss+100)},
+                              {'product_code': product, 'condition_type': 'STOP', 'side': 'BUY',
+                               'size': str(switch), 'trigger_price': str(catchup_trial_price)}]
+                order = self.bitflyer_api.sendparentorder(order_method='IFD', minute_to_expire=expire_time,
+                                                      parameters=parameters)
+                data2csv.data2csv(
+                    [time.strftime('%b:%d:%H:%M'), 'order', 'IFD_STOPLOSS(inhour)', 'amount', '%f' % float(switch),
+                    'catch_up',
+                    '%f' % float(stoploss+100), 'stoploss', '%f' % float(catchup_trial_price)])
+
+
+            elif po == 'short':
+                catchup_trial_price = math.floor(stoploss * (100 - catchup_trial) / 100)
+                parameters = [ {'product_code': product, 'condition_type': 'STOP_LIMIT', 'side': 'BUY',
+                           'size': str(switch), 'trigger_price': str(stoploss+200), 'price': str(stoploss-100)},
+                               {'product_code': product, 'condition_type': 'STOP', 'side': 'SELL',
+                                'size': str(switch), 'trigger_price': str(catchup_trial_price)}]
+                order = self.bitflyer_api.sendparentorder(order_method='IFD', minute_to_expire=expire_time,
+                                                      parameters=parameters)
+                data2csv.data2csv(
+                    [time.strftime('%b:%d:%H:%M'), 'order', 'IFD_STOPLOSS(inhour)', 'amount', '%f' % float(switch),
+                    'catch_up',
+                    '%f' % float(stoploss-100), 'stoploss', '%f' % float(catchup_trial_price)])
+
+            if 'parent_order_acceptance_id' in order:
+                return (order)
+            else:
+                try_t += 1
+                print(order)
+                print('Failed, try again')
+                time.sleep(20)
+
     def print_order(self, order):
         predict.print_and_write(order)
 
@@ -307,7 +351,7 @@ class AutoTrading:
             self.cur_find_direction = 'short'
         elif curprice < lo:
             self.cur_find_direction = 'long'
-        elif curprice < hi and curprice > lo:
+        elif curprice <= hi and curprice >= lo:
             self.cur_find_direction = 'long_short'
         else:
             self.cur_find_direction = 'none'
@@ -349,7 +393,8 @@ class AutoTrading:
                 stopprofit = hi
             if time_diff < 3600 and close > lo: # new part: previous hours is not a low but this hour may be a low , use the low line
                 stoploss = lo
-                order = self.trade_oco3('short', stopprofit, stoploss, trade_amount, traed_amount_switch)
+                #order = self.trade_oco3('short', stopprofit, stoploss, trade_amount, traed_amount_switch)
+                order = self.trade_oco4('short',  stoploss, traed_amount_switch)
             else:
                 stoploss = hi-slide # ?
                 order = self.trade_oco2('short', stopprofit, stoploss, trade_amount, traed_amount_switch)
@@ -362,7 +407,8 @@ class AutoTrading:
                 stopprofit = lo
             if time_diff < 3600 and close < hi: # new part
                 stoploss = hi
-                order = self.trade_oco3('long', stopprofit, stoploss, trade_amount, traed_amount_switch)
+                #order = self.trade_oco3('long', stopprofit, stoploss, trade_amount, traed_amount_switch)
+                order = self.trade_oco4('long', stoploss, traed_amount_switch)
             else:
                 stoploss = lo+slide # ?
                 order = self.trade_oco2('long', stopprofit, stoploss, trade_amount, traed_amount_switch)
