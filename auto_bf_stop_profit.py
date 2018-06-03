@@ -245,7 +245,7 @@ class AutoTrading:
         print('trade bitflyer')
         expire_time = 575
         try_t = 0
-        catchup_trial = 0.5
+        catchup_trial = 0.43
 
         while try_t < 20:
             if po == 'long':
@@ -378,13 +378,13 @@ class AutoTrading:
     def trade_with_position(self, hi, lo, close):
 
         profitcut_factor = 0.12
-        slide = 1500
+        slide = 1000
         checkins = self.get_checkin_price()
         checkin_price = checkins[0]
         self.cur_hold_position = float('%.2f'%(math.floor(checkins[1] * 100)/100))
         time_diff = abs(checkins[2])
-        trade_amount = '%.2f'%(abs(self.cur_hold_position))
-        traed_amount_switch = '%.2f'%(float(trade_amount) + self.init_trade_amount)
+        trade_amount = '%.2f' % (abs(self.cur_hold_position))
+        traed_amount_switch = '%.2f' % (float(trade_amount) + self.init_trade_amount)
 
 
         if self.cur_hold_position < 0.0:
@@ -392,7 +392,7 @@ class AutoTrading:
             if stopprofit > hi:
                 stopprofit = hi
             if time_diff < 3600 and close > lo: # new part: previous hours is not a low but this hour may be a low , use the low line
-                stoploss = lo
+                stoploss = math.floor(checkin_price) #lo
                 #order = self.trade_oco3('short', stopprofit, stoploss, trade_amount, traed_amount_switch)
                 order = self.trade_oco4('short',  stoploss, traed_amount_switch)
             else:
@@ -406,7 +406,7 @@ class AutoTrading:
             if stopprofit  < lo:
                 stopprofit = lo
             if time_diff < 3600 and close < hi: # new part
-                stoploss = hi
+                stoploss = math.floor(checkin_price) #hi
                 #order = self.trade_oco3('long', stopprofit, stoploss, trade_amount, traed_amount_switch)
                 order = self.trade_oco4('long', stoploss, traed_amount_switch)
             else:
@@ -512,6 +512,7 @@ class AutoTrading:
             hi = result[1]
             lo = result[0]
             close = result[2]
+
             self.trade_with_position(hi, lo, close)
 
 if __name__ == '__main__':
