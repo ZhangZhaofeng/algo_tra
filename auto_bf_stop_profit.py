@@ -384,7 +384,7 @@ class AutoTrading:
         self.cur_hold_position = float('%.2f'%(math.floor(checkins[1] * 100)/100))
         time_diff = abs(checkins[2])
         trade_amount = '%.2f'%(abs(self.cur_hold_position))
-        traed_amount_switch = '%.2f'%(trade_amount + self.init_trade_amount)
+        traed_amount_switch = '%.2f'%(float(trade_amount) + self.init_trade_amount)
 
 
         if self.cur_hold_position < 0.0:
