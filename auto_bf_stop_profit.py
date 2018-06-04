@@ -51,6 +51,7 @@ class AutoTrading:
     cur_hold_position = 0.0
     cur_find_direction = 'none'
     order_exist = False
+    switch_in_hour = True # if true, will be waiting for inhour position change
     order_id = ''
     init_trade_amount = 0.05
 
@@ -205,29 +206,29 @@ class AutoTrading:
         try_t = 0
         while try_t < 20:
             if po == 'long':
-                parameters = [{'product_code': product, 'condition_type': 'LIMIT', 'side': 'SELL',
-                           'size': str(amount), 'price': str(stopprofit)},
+                parameters = [{'product_code': product, 'condition_type': 'STOP', 'side': 'SELL',
+                           'size': str(switch), 'trigger_price': str(stoploss)},
                           {'product_code': product, 'condition_type': 'STOP_LIMIT', 'side': 'SELL',
-                           'size': str(switch), 'trigger_price': str(stoploss-200), 'price': str(stoploss+100)},
+                           'size': str(switch), 'trigger_price': str(stopprofit-200), 'price': str(stopprofit+200)},
                           ]
                 order = self.bitflyer_api.sendparentorder(order_method='OCO', minute_to_expire=expire_time,
                                                       parameters=parameters)
                 data2csv.data2csv(
-                    [time.strftime('%b:%d:%H:%M'), 'order', 'OCO_SELL_LIMIT_STOP(inhour)', 'amount', '%f' % float(amount),
+                    [time.strftime('%b:%d:%H:%M'), 'order', 'OCO_SELL_LIMIT_STOP(inhour)', 'amount', '%f' % float(switch),
                     'stopprofit',
                     '%f' % float(stopprofit), 'stoploss', '%f' % float(stoploss)])
 
 
             elif po == 'short':
-                parameters = [{'product_code': product, 'condition_type': 'LIMIT', 'side': 'BUY',
-                           'size': str(amount), 'price': str(stopprofit)},
+                parameters = [{'product_code': product, 'condition_type': 'STOP', 'side': 'BUY',
+                           'size': str(switch), 'trigger_price': str(stoploss)},
                           {'product_code': product, 'condition_type': 'STOP_LIMIT', 'side': 'BUY',
-                           'size': str(switch), 'trigger_price': str(stoploss+200), 'price': str(stoploss-100)},
+                           'size': str(switch), 'trigger_price': str(stopprofit+200), 'price': str(stopprofit-200)},
                           ]
                 order = self.bitflyer_api.sendparentorder(order_method='OCO', minute_to_expire=expire_time,
                                                       parameters=parameters)
                 data2csv.data2csv(
-                    [time.strftime('%b:%d:%H:%M'), 'order', 'OCO_BUY_LIMIT_STOP(inhour)', 'amount', '%f' % float(amount),
+                    [time.strftime('%b:%d:%H:%M'), 'order', 'OCO_BUY_LIMIT_STOP(inhour)', 'amount', '%f' % float(switch),
                     'stopprofit',
                     '%f' % float(stopprofit), 'stoploss', '%f' % float(stoploss)])
 
@@ -374,6 +375,36 @@ class AutoTrading:
             self.order_id = order['parent_order_acceptance_id']
 
 
+    def inhour_processing(self, hi, lo, checkin, i=60):
+        stopprofit = checkin
+        trade_amount = '%.2f' % (abs(self.cur_hold_position))
+        traed_amount_switch = '%.2f' % (float(trade_amount) + self.init_trade_amount)
+         # counter last for 20 min
+        # First order
+        if self.cur_hold_position < 0.0:
+            stoploss = hi
+            order = self.trade_oco3('short', stopprofit, stoploss, trade_amount, traed_amount_switch)
+        else:
+            stoploss = lo
+            order = self.trade_oco3('long', stopprofit, stoploss, trade_amount, traed_amount_switch)
+        while i > 0:
+            catchup_trial = 0.43
+            time.sleep(60)
+            checkins = self.get_checkin_price()
+            new_position = float('%.2f' % (math.floor(checkins[1] * 100) / 100))
+            trade_amount = '%.2f' % (abs(self.cur_hold_position))
+            traed_amount_switch = '%.2f' % (float(trade_amount) + self.init_trade_amount)
+            if new_position * self.cur_hold_position < 0: # if position changed place a new order.
+                self.cur_hold_position = new_position
+                if new_position > 0.0:
+                    stoploss = math.floor(stopprofit * (100 - catchup_trial) / 100)
+                    order = self.trade_oco3('long', stopprofit, stoploss, trade_amount, traed_amount_switch)
+                else:
+                    stoploss = math.floor(stopprofit * (100 + catchup_trial) / 100)
+                    order = self.trade_oco3('short', stopprofit, stoploss, trade_amount, traed_amount_switch)
+            i -= 1
+        return(order)
+
     # if with position give a price to stopprofit and stoploss
     def trade_with_position(self, hi, lo, close):
 
@@ -385,19 +416,24 @@ class AutoTrading:
         time_diff = abs(checkins[2])
         trade_amount = '%.2f' % (abs(self.cur_hold_position))
         traed_amount_switch = '%.2f' % (float(trade_amount) + self.init_trade_amount)
-
-
+        cur_min = int(time.strftime('%M:')[0:-1])
+        i = (60 - cur_min) * 0.9
         if self.cur_hold_position < 0.0:
             stopprofit = math.floor(checkin_price * (1 - profitcut_factor))
+
             if stopprofit > hi:
                 stopprofit = hi
-            if time_diff < 3600 and close > lo: # new part: previous hours is not a low but this hour may be a low , use the low line
-                stoploss = math.floor(checkin_price) #lo
+            if time_diff < 3600 and close > lo and i > 0 and self.switch_in_hour: # new part: previous hours is not a low but this hour may be a low , use the low line
+                #stopprofit = math.floor(checkin_price) #lo
+                #stoploss = hi
                 #order = self.trade_oco3('short', stopprofit, stoploss, trade_amount, traed_amount_switch)
-                order = self.trade_oco4('short',  stoploss, traed_amount_switch)
+                #order = self.trade_oco4('short',  stoploss, traed_amount_switch)
+                order = self.inhour_processing(hi, lo, checkin_price, i)
+                self.switch_in_hour = False
             else:
                 stoploss = hi-slide # ?
                 order = self.trade_oco2('short', stopprofit, stoploss, trade_amount, traed_amount_switch)
+                self.switch_in_hour = True
             self.print_order(order)
             self.order_exist = True
             self.order_id = order['parent_order_acceptance_id']
@@ -405,13 +441,16 @@ class AutoTrading:
             stopprofit = math.floor(checkin_price * (1 + profitcut_factor))
             if stopprofit  < lo:
                 stopprofit = lo
-            if time_diff < 3600 and close < hi: # new part
-                stoploss = math.floor(checkin_price) #hi
+            if time_diff < 3600 and close < hi and i > 0 and self.switch_in_hour: # new part
+                #stoploss = math.floor(checkin_price) #hi
                 #order = self.trade_oco3('long', stopprofit, stoploss, trade_amount, traed_amount_switch)
-                order = self.trade_oco4('long', stoploss, traed_amount_switch)
+                #order = self.trade_oco4('long', stoploss, traed_amount_switch)
+                order = self.inhour_processing(hi, lo, checkin_price, i)
+                self.switch_in_hour = False
             else:
                 stoploss = lo+slide # ?
                 order = self.trade_oco2('long', stopprofit, stoploss, trade_amount, traed_amount_switch)
+                self.switch_in_hour = True
             self.print_order(order)
             self.order_exist = True
             self.order_id = order['parent_order_acceptance_id']
@@ -516,7 +555,12 @@ class AutoTrading:
             self.trade_with_position(hi, lo, close)
 
 if __name__ == '__main__':
+    argvs = sys.argv
+    argc = len(argvs)
     autoTrading = AutoTrading()
+    if argc >= 2:
+        autoTrading.switch_in_hour = bool(sys.argv[1])
+
     #tdelta = autoTrading.bf_timejudge('2018-05-21T14:35:44.713')
     while 1:
         autoTrading.judge_condition()
