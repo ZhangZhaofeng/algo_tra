@@ -375,7 +375,7 @@ class AutoTrading:
             self.order_id = order['parent_order_acceptance_id']
 
 
-    def inhour_processing(self, hi, lo, checkin, i=60):
+    def inhour_processing(self, hi, lo, checkin, i):
         stopprofit = checkin
         trade_amount = '%.2f' % (abs(self.cur_hold_position))
         traed_amount_switch = '%.2f' % (float(trade_amount) + self.init_trade_amount)
@@ -388,6 +388,7 @@ class AutoTrading:
             stoploss = lo
             order = self.trade_oco3('long', stopprofit, stoploss, trade_amount, traed_amount_switch)
         while i > 0:
+            predict.print_and_write('Detecting inhour switch, last %d times'%(int(i)))
             catchup_trial = 0.43
             time.sleep(60)
             checkins = self.get_checkin_price()
@@ -397,9 +398,11 @@ class AutoTrading:
             if new_position * self.cur_hold_position < 0: # if position changed place a new order.
                 self.cur_hold_position = new_position
                 if new_position > 0.0:
+                    predict.print_and_write('Place a sell order')
                     stoploss = math.floor(stopprofit * (100 - catchup_trial) / 100)
                     order = self.trade_oco3('long', stopprofit, stoploss, trade_amount, traed_amount_switch)
                 else:
+                    predict.print_and_write('Place a buy order')
                     stoploss = math.floor(stopprofit * (100 + catchup_trial) / 100)
                     order = self.trade_oco3('short', stopprofit, stoploss, trade_amount, traed_amount_switch)
             i -= 1
@@ -408,7 +411,7 @@ class AutoTrading:
     # if with position give a price to stopprofit and stoploss
     def trade_with_position(self, hi, lo, close):
 
-        profitcut_factor = 0.12
+        profitcut_factor = 0.13
         slide = 1000
         checkins = self.get_checkin_price()
         checkin_price = checkins[0]
