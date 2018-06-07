@@ -325,7 +325,7 @@ class AutoTrading:
 
         elif isinstance(p, dict) or len(p) == 0:
             predict.print_and_write('Position not exist')
-
+        checkin_price = math.floor(checkin_price)
         return([checkin_price, position0, time_diff])
 
     def get_current_price(self, numbers):
