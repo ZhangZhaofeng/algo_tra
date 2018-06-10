@@ -459,14 +459,23 @@ class AutoTrading:
             self.order_id = order['parent_order_acceptance_id']
 
     def get_hilo(self):
-        hilos = technical_fx_bidirc.HILO()
-        result = hilos.publish_current_hilo_price()
+        i = 0
+        while i < 30:
+            try:
+                hilos = technical_fx_bidirc.HILO()
+                result = hilos.publish_current_hilo_price()
 
         # result = prediction.publish_current_limit_price(periods="1H")
-        sell = float(result[1])
-        buy = float(result[0])
-        close = float(result[2])  # the close price of last hour
-        return([sell, buy, close])
+                sell = float(result[1])
+                buy = float(result[0])
+                close = float(result[2])  # the close price of last hour
+                return([sell, buy, close])
+            except Exception:
+                print(Exception)
+                predict.print_and_write('Try to get hilo again')
+                time.sleep(10)
+                i+=1
+                continue
 
     def get_orders(self, status = ''):
         #order = self.quoinex_api.get_orders()
