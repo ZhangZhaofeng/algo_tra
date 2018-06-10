@@ -420,7 +420,7 @@ class AutoTrading:
         trade_amount = '%.2f' % (abs(self.cur_hold_position))
         traed_amount_switch = '%.2f' % (float(trade_amount) + self.init_trade_amount)
         cur_min = int(time.strftime('%M:')[0:-1])
-        i = (60 - cur_min) * 0.9
+        i = (60 - cur_min) * 0.95
         if self.cur_hold_position < 0.0:
             stopprofit = math.floor(checkin_price * (1 - profitcut_factor))
 
@@ -566,6 +566,20 @@ class AutoTrading:
 
             self.trade_with_position(hi, lo, close)
 
+def sendamail(title ,str):
+    address = '@.com'  # change the reciver e-mail address to yours
+    username = 'goozzfgle@gmail.com'
+    paswd = ''
+
+    mail_str = '%s %s' % (str, formatdate(None, True, None))
+    sender = SendMail(address, username, paswd)
+    msg = MIMEText(mail_str)
+    msg['Subject'] = title
+    msg['From'] = username
+    msg['To'] = address
+    msg['Date'] = formatdate()
+    sender.send_email(address, msg.as_string())
+
 if __name__ == '__main__':
     argvs = sys.argv
     argc = len(argvs)
@@ -574,8 +588,11 @@ if __name__ == '__main__':
         autoTrading.switch_in_hour = bool(sys.argv[1])
 
     #tdelta = autoTrading.bf_timejudge('2018-05-21T14:35:44.713')
-    while 1:
-        autoTrading.judge_condition()
-        time.sleep(600)
-
+    try:
+        while 1:
+            autoTrading.judge_condition()
+            time.sleep(600)
+    except Exception:
+        print(Exception)
+        sendamail(Exception, 'exception happend')
     #autoTrading.get_current_price(100)
