@@ -53,7 +53,7 @@ class AutoTrading:
     order_exist = False
     switch_in_hour = True # if true, will be waiting for inhour position change
     order_id = ''
-    init_trade_amount = 0.05
+    init_trade_amount = 0.06
 
     def __init__(self):
         print("Initializing API")
@@ -215,7 +215,7 @@ class AutoTrading:
                                                       parameters=parameters)
                 data2csv.data2csv(
                     [time.strftime('%b:%d:%H:%M'), 'order', 'OCO_SELL_LIMIT_STOP(inhour)', 'amount', '%f' % float(switch),
-                    'stopprofit',
+                    'catchup',
                     '%f' % float(stopprofit), 'stoploss', '%f' % float(stoploss)])
 
 
@@ -229,7 +229,7 @@ class AutoTrading:
                                                       parameters=parameters)
                 data2csv.data2csv(
                     [time.strftime('%b:%d:%H:%M'), 'order', 'OCO_BUY_LIMIT_STOP(inhour)', 'amount', '%f' % float(switch),
-                    'stopprofit',
+                    'catchup',
                     '%f' % float(stopprofit), 'stoploss', '%f' % float(stoploss)])
 
             if 'parent_order_acceptance_id' in order:
@@ -519,7 +519,7 @@ class AutoTrading:
                 if order['parent_order_state'] == 'COMPLETED':
                     predict.print_and_write('Order completed')
                     return (0.0)
-                if order['parent_order_state'] == 'CANCELED':
+                if order['parent_order_state'] == 'CANCELED' or order['parent_order_state'] == 'REJECTED':
                     predict.print_and_write('Order cancelled')
                     return (float(order['cancel_size']))
                 else:
@@ -569,7 +569,7 @@ class AutoTrading:
 def sendamail(title ,str):
     address = '@.com'  # change the reciver e-mail address to yours
     username = 'goozzfgle@gmail.com'
-    paswd = ''
+    paswd = 'googlebaidu'
 
     mail_str = '%s %s' % (str, formatdate(None, True, None))
     sender = SendMail(address, username, paswd)
@@ -591,7 +591,7 @@ if __name__ == '__main__':
     try:
         while 1:
             autoTrading.judge_condition()
-            time.sleep(600)
+            time.sleep(400)
     except Exception:
         print(Exception)
         sendamail(Exception, 'exception happend')
