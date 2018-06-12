@@ -411,7 +411,7 @@ class AutoTrading:
     # if with position give a price to stopprofit and stoploss
     def trade_with_position(self, hi, lo, close):
 
-        profitcut_factor = 0.13
+        profitcut_factor = 0.3
         slide = 1000
         checkins = self.get_checkin_price()
         checkin_price = checkins[0]
