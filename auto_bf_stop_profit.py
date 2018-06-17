@@ -603,6 +603,7 @@ if __name__ == '__main__':
     while try_times > 0:
         try:
             autoTrading.judge_condition()
+            autoTrading.get_collateral()
             time.sleep(400)
         except Exception:
             print(Exception)
