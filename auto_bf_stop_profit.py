@@ -289,7 +289,10 @@ class AutoTrading:
 
     # judge if the time stamp in this hour
     def bf_timejudge(self, timestring):
-        position_time = time.strptime(timestring, '%Y-%m-%dT%H:%M:%S.%f')
+        if len(timestring) <= 19:
+            position_time = time.strptime(timestring, '%Y-%m-%dT%H:%M:%S')
+        else:
+            position_time = time.strptime(timestring, '%Y-%m-%dT%H:%M:%S.%f')
         cur_time = time.gmtime()
         #time.sleep(10)
         #cur_time2 = time.gmtime()
@@ -411,7 +414,7 @@ class AutoTrading:
     # if with position give a price to stopprofit and stoploss
     def trade_with_position(self, hi, lo, close):
 
-        profitcut_factor = 0.3
+        profitcut_factor = 0.25
         slide = 1000
         checkins = self.get_checkin_price()
         checkin_price = checkins[0]
@@ -566,6 +569,14 @@ class AutoTrading:
 
             self.trade_with_position(hi, lo, close)
 
+    def get_collateral(self):
+        try:
+            result = self.bitflyer_api.getcollateral(product_code = 'FX_BTC_JPY')
+            data2csv.data2csv(result)
+            predict.print_and_write(result)
+        except Exception:
+            predict.print_and_write(Exception)
+
 def sendamail(title ,str):
     address = '@.com'  # change the reciver e-mail address to yours
     username = 'goozzfgle@gmail.com'
@@ -587,12 +598,17 @@ if __name__ == '__main__':
     if argc >= 2:
         autoTrading.switch_in_hour = bool(sys.argv[1])
 
+    try_times = 20
     #tdelta = autoTrading.bf_timejudge('2018-05-21T14:35:44.713')
-    try:
-        while 1:
+    while try_times > 0:
+        try:
             autoTrading.judge_condition()
             time.sleep(400)
-    except Exception:
-        print(Exception)
-        sendamail(Exception, 'exception happend')
+        except Exception:
+            print(Exception)
+            sendamail(Exception, 'exception happend')
+            predict.print_and_write('Exception happened, try again')
+            predict.print_and_write('Last try times: %d'%try_times)
+            try_times -= 1
+            time.sleep(200)
     #autoTrading.get_current_price(100)
