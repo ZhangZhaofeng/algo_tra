@@ -580,7 +580,7 @@ class AutoTrading:
 def sendamail(title ,str):
     address = '@.com'  # change the reciver e-mail address to yours
     username = 'goozzfgle@gmail.com'
-    paswd = 'googlebaidu'
+    paswd = ''
 
     mail_str = '%s %s' % (str, formatdate(None, True, None))
     sender = SendMail(address, username, paswd)
@@ -607,7 +607,7 @@ if __name__ == '__main__':
             time.sleep(400)
         except Exception:
             print(Exception)
-            sendamail(Exception, 'exception happend')
+            sendamail('Exception', 'exception happend')
             predict.print_and_write('Exception happened, try again')
             predict.print_and_write('Last try times: %d'%try_times)
             try_times -= 1
