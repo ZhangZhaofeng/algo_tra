@@ -382,17 +382,17 @@ class AutoTrading:
         stopprofit = checkin
         trade_amount = '%.2f' % (abs(self.cur_hold_position))
         traed_amount_switch = '%.2f' % (float(trade_amount) + self.init_trade_amount)
+        catchup_trial = 0.43
          # counter last for 20 min
         # First order
         if self.cur_hold_position < 0.0:
-            stoploss = hi
+            stoploss = math.floor(stopprofit * (100 + catchup_trial) / 100)
             order = self.trade_oco3('short', stopprofit, stoploss, trade_amount, traed_amount_switch)
         else:
-            stoploss = lo
+            stoploss = math.floor(stopprofit * (100 - catchup_trial) / 100)
             order = self.trade_oco3('long', stopprofit, stoploss, trade_amount, traed_amount_switch)
         while i > 0:
             predict.print_and_write('Detecting inhour switch, last %d times'%(int(i)))
-            catchup_trial = 0.43
             time.sleep(60)
             checkins = self.get_checkin_price()
             new_position = float('%.2f' % (math.floor(checkins[1] * 100) / 100))
