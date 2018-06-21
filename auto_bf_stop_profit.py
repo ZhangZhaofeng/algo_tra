@@ -405,8 +405,6 @@ class AutoTrading:
 
             order = self.trade_oco3('long', stopprofit, stoploss, trade_amount, traed_amount_switch)
             previous_order_info = 'long'
-
-        passed_time += 1
         while i > 0:
             predict.print_and_write('Detecting inhour switch, last %d times'%(int(i)))
             time.sleep(60)
@@ -421,14 +419,17 @@ class AutoTrading:
                     stoploss = math.floor(stopprofit * (100 - catchup_trial) / 100)
                     order = self.trade_oco3('long', stopprofit, stoploss, trade_amount, traed_amount_switch)
                     previous_order_info = 'long'
+                    passed_time = 0
                 else:
                     predict.print_and_write('Place a buy order')
                     stoploss = math.floor(stopprofit * (100 + catchup_trial) / 100)
                     order = self.trade_oco3('short', stopprofit, stoploss, trade_amount, traed_amount_switch)
                     previous_order_info = 'short'
+                    passed_time = 0
             i -= 1
             passed_time += 1
-            if passed_time >= 7:
+            print('Passed time from last order: %d'%passed_time)
+            if passed_time >= 5:
                 if self.judge_order(order['parent_order_acceptance_id']):
                     predict.print_and_write('Order again')
                     order = self.trade_oco3(previous_order_info, stopprofit, stoploss, trade_amount, traed_amount_switch)
