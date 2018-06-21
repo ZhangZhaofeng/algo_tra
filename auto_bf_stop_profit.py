@@ -383,14 +383,30 @@ class AutoTrading:
         trade_amount = '%.2f' % (abs(self.cur_hold_position))
         traed_amount_switch = '%.2f' % (float(trade_amount) + self.init_trade_amount)
         catchup_trial = 0.43
+        passed_time = 0
+        previous_order_info = ''
          # counter last for 20 min
         # First order
         if self.cur_hold_position < 0.0:
-            stoploss = math.floor(stopprofit * (100 + catchup_trial) / 100)
+            limit = math.floor(stopprofit * (100 + catchup_trial) / 100)
+            if hi > limit:
+                stoploss = hi
+            else:
+                stoploss = limit
+
             order = self.trade_oco3('short', stopprofit, stoploss, trade_amount, traed_amount_switch)
+            previous_order_info = 'short'
         else:
-            stoploss = math.floor(stopprofit * (100 - catchup_trial) / 100)
+            limit = math.floor(stopprofit * (100 - catchup_trial) / 100)
+            if lo < limit:
+                stoploss = lo
+            else:
+                stoploss = limit
+
             order = self.trade_oco3('long', stopprofit, stoploss, trade_amount, traed_amount_switch)
+            previous_order_info = 'long'
+
+        passed_time += 1
         while i > 0:
             predict.print_and_write('Detecting inhour switch, last %d times'%(int(i)))
             time.sleep(60)
@@ -404,11 +420,19 @@ class AutoTrading:
                     predict.print_and_write('Place a sell order')
                     stoploss = math.floor(stopprofit * (100 - catchup_trial) / 100)
                     order = self.trade_oco3('long', stopprofit, stoploss, trade_amount, traed_amount_switch)
+                    previous_order_info = 'long'
                 else:
                     predict.print_and_write('Place a buy order')
                     stoploss = math.floor(stopprofit * (100 + catchup_trial) / 100)
                     order = self.trade_oco3('short', stopprofit, stoploss, trade_amount, traed_amount_switch)
+                    previous_order_info = 'short'
             i -= 1
+            passed_time += 1
+            if passed_time >= 7:
+                if self.judge_order(order['parent_order_acceptance_id']):
+                    predict.print_and_write('Order again')
+                    order = self.trade_oco3(previous_order_info, stopprofit, stoploss, trade_amount, traed_amount_switch)
+                passed_time = 0
         return(order)
 
     # if with position give a price to stopprofit and stoploss
@@ -539,6 +563,25 @@ class AutoTrading:
                 i -= 1
         predict.print_and_write('Cancel failed,( May be just lag)')
         return (0.0)
+
+    def judge_order(self, id):
+        i = 20
+        while i > 0:
+            try:
+                order = self.get_orderbyid(id)
+                if order['parent_order_state'] == 'REJECTED':
+                    predict.print_and_write('Order rejected')
+                    return True
+                else:
+                    return False
+            except Exception:
+                time.sleep(5)
+                print(Exception)
+                print('Exception Try again')
+                i -= 1
+        predict.print_and_write('Try many times but no result, return False without confidence')
+        return False
+
 
     def judge_condition(self):
         if self.order_exist == True:
