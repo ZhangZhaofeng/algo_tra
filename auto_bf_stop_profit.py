@@ -589,14 +589,20 @@ class AutoTrading:
             remain_test = self.cancel_order(self.order_id) + 1
             print('cancel order, remain %f'%(remain_test -1))
 
+        result = self.get_hilo()
+        hi = result[1]
+        lo = result[0]
 
+        if lo > hi:
+            temp = 0
+            temp = lo
+            lo = hi
+            hi = temp
+            predict.print_and_write('Lo > hi, switch, Lo: %f, Hi: %f'%(lo, hi))
         checkins = self.get_checkin_price()
         # if not position exist trade none position
         if checkins[1] == 0.0:
             predict.print_and_write('No position exist, trade none position')
-            result = self.get_hilo()
-            hi = result[1]
-            lo = result[0]
             cur_price = self.get_current_price(100)
             predict.print_and_write('current price is %f' % (cur_price))
             self.trade_none_position(cur_price, hi ,lo)
@@ -606,11 +612,7 @@ class AutoTrading:
             data2csv.data2csv(
                 [time.strftime('%b:%d:%H:%M'), 'position', '%f' % float(checkins[1]) , 'check in price', '%f' % float(checkins[0])])
             predict.print_and_write('Position exist, trade with position')
-            result = self.get_hilo()
-            hi = result[1]
-            lo = result[0]
             close = result[2]
-
             self.trade_with_position(hi, lo, close)
 
     def get_collateral(self):
