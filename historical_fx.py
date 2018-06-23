@@ -32,6 +32,8 @@ class charts:
             period="180"
         elif period=="15m" or period=="15M":
             period="900"
+        elif period=="30m" or period=="30M":
+            period="1800"
         elif period=="1h" or period=="1H":
             period="3600"
         elif period=="4h" or period=="4H":

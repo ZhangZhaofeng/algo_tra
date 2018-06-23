@@ -18,17 +18,21 @@ class HILO:
         print("HILO initialized")
         self.btc_charts = historical_fx.charts()
 
+    def get_ATR(self, HIGH,LOW,CLOSE,timeperiod=14):  # price=1*N (N>61)
+        ma_high=talib.ATR(HIGH,LOW,CLOSE,timeperiod)
+        return ma_high
+
     def MA(self, ndarray, timeperiod=5):
-        x = np.array([talib.MA(ndarray.T[0], timeperiod)])
+        x = np.array([talib.SMA(ndarray.T[0], timeperiod)])
         # print(x)
         return x.T
 
     def get_HIGH_MA(self, HIGH):  # price=1*N (N>61)
-        ma_high=self.MA(HIGH,20)
+        ma_high=self.MA(HIGH,16)*1.003
         return ma_high
 
     def get_LOW_MA(self, LOW):  # price=1*N (N>61)
-        ma_low=self.MA(LOW,30)
+        ma_low=self.MA(LOW,17)*0.998
         return ma_low
 
     def get_long_price(self, HIGH):
@@ -72,7 +76,7 @@ class HILO:
         print(len(short_price))
 
 
-        amount = np.zeros([len(all), 7])
+        amount = np.zeros([len(all), 8])
         long = False
         short = False
         cash = 10000.
@@ -170,6 +174,7 @@ class HILO:
                 else:
                     if all[t][2] > buy_price:
                         trade_back+=1
+                        amount[t][7] = 777777
 
             elif not short and long:
                 if all[t][1]<sell_price:
@@ -195,6 +200,7 @@ class HILO:
                 else:
                     if all[t][3] < sell_price:
                         trade_back+=1
+                        amount[t][7] = 777777
 
 
             #result log
@@ -223,7 +229,7 @@ class HILO:
             time_stamp, open_price, high_price, low_price, close_price, long_price,short_price, amount]
 
         data = pd.DataFrame(all,
-                            columns={"1", "2", "3", "4", "5", "6", "7", "8", "9", "10","11","12","13", "14"})
+                            columns={"1", "2", "3", "4", "5", "6", "7", "8", "9", "10","11","12","13", "14", "15"})
 
         print("============================")
         print(long_times)
@@ -710,7 +716,7 @@ if __name__ == '__main__':
     counter_sum= 0
     length = 1
     for i in range(length):
-        value,counter = hilo.simulate(num=24 * 7 * 35 + 50, periods="1H", end_offset=3600 * 24 * 7 * (i+0))
+        value,counter = hilo.simulate(num=1*24 * 1 * 1 + 50, periods="1H", end_offset=3600 * 24 * 7 * (i+17))
         sum = sum + value
         counter_sum = counter_sum+counter
     # hilo.simulate(num=60*24*50+61, periods="1m", end_offset=0)
