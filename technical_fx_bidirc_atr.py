@@ -18,11 +18,12 @@ class HILO:
         print("HILO initialized")
         self.btc_charts = historical_fx.charts()
         self.status = {"side": "null", "entry_size": [], "entry_price": [],
-                       "rest": 50000.}  # "nth":[entry_cash, entry_price]
+                       "rest": 100000.}  # "nth":[entry_cash, entry_price]
         self.one_unit_btc = 0.01
-        self.five_pricelines=[0,0,0,0,0]
-        self.line_position_no=0
-        self.atr=0
+        self.five_pricelines = [0, 0, 0, 0, 0]
+        self.line_position_no = 0
+        self.atr_init = 20000
+        self.atr = self.atr_init
 
     def get_ATR(self, HIGH, LOW, CLOSE, timeperiod=14):  # price=1*N (N>61)
         ma_high = talib.ATR(HIGH, LOW, CLOSE, timeperiod)
@@ -30,7 +31,7 @@ class HILO:
 
     def initialize_status(self):
         self.status = {"side": "null", "entry_size": [], "entry_price": [],
-                       "rest": 50000.}  # "nth":[entry_cash, entry_price]
+                       "rest": 100000.}  # "nth":[entry_cash, entry_price]
 
     def get_intermediate_value(self):
         if self.status["side"] == "null":
@@ -50,14 +51,12 @@ class HILO:
             value = 0.
             for i in range(length):
                 value += self.status["entry_size"][i] * self.status["entry_price"][i] - self.status["entry_size"][i] * \
-                         ( self.five_pricelines[i]- self.status["entry_price"][i])
+                         (self.five_pricelines[i] - self.status["entry_price"][i])
 
             value += self.status["rest"]
             return value
         else:
             raise Exception("No such side type!")
-
-
 
     def get_total_value(self, current_price):
         if self.status["side"] == "null":
@@ -77,7 +76,7 @@ class HILO:
             value = 0.
             for i in range(length):
                 value += self.status["entry_size"][i] * self.status["entry_price"][i] - self.status["entry_size"][i] * (
-                            current_price - self.status["entry_price"][i])
+                        current_price - self.status["entry_price"][i])
 
             value += self.status["rest"]
             return value
@@ -136,118 +135,193 @@ class HILO:
                 self.status["entry_price"].append(self.five_pricelines[i])
                 self.status["rest"] -= self.one_unit_btc * self.five_pricelines[i]
 
-    def adjust_five_pricelines(self,open, atr_prev,side="long"):
-        delta=500
-        if side=="long":
-            first_price=self.five_pricelines[0]
-            atr=atr_prev
+    # To make the position be continuous to the previous unit, lines needs to be adjust at the start of current unit.
+    def adjust_five_pricelines_v2(self, open, atr_prev, side="long"):
+        delta = 10
+        if side == "long":
+            first_price = self.five_pricelines[0]
+            atr = atr_prev
             if self.line_position_no < self.get_beyond_priceline_no(self.five_pricelines, open, side):
-                for i in range(1000):
-                    atr+=delta
-                    assert (i < 990)
-                    self.five_pricelines = [first_price, first_price + 0.2 * atr, first_price + 0.4 * atr, first_price + 0.7 * atr,
+                for i in range(10000):
+                    atr += delta
+                    assert (i < 9999)
+                    assert (delta > 0)
+                    self.five_pricelines = [first_price, first_price + 0.2 * atr, first_price + 0.4 * atr,
+                                            first_price + 0.7 * atr,
                                             first_price + atr]
                     if self.line_position_no >= self.get_beyond_priceline_no(self.five_pricelines, open, side):
+                        print("long:atr=%f" % atr)
                         break
 
             elif self.line_position_no > self.get_beyond_priceline_no(self.five_pricelines, open, side):
-                for i in range(1000):
-                    atr-=delta
-                    assert (i < 990)
-                    self.five_pricelines = [first_price, first_price + 0.2 * atr, first_price + 0.4 * atr, first_price + 0.7 * atr,
+                for i in range(10000):
+                    atr -= delta
+                    assert (i < 9999)
+                    assert (delta > 0)
+                    self.five_pricelines = [first_price, first_price + 0.2 * atr, first_price + 0.4 * atr,
+                                            first_price + 0.7 * atr,
                                             first_price + atr]
                     if self.line_position_no <= self.get_beyond_priceline_no(self.five_pricelines, open, side):
+                        print("long:atr=%f" % atr)
                         break
-        elif side=="short":
-            first_price=self.five_pricelines[0]
-            atr=-(self.five_pricelines[4]-first_price)
-            print("atr= %f"  %atr )
-            if self.line_position_no< self.get_beyond_priceline_no(self.five_pricelines, open, side):
-                for i in range(1000):
-                    atr+=delta
-                    assert (i < 990)
-                    self.five_pricelines = [first_price, first_price - 0.2 * atr, first_price - 0.4 * atr, first_price - 0.7 * atr,
+        elif side == "short":
+            first_price = self.five_pricelines[0]
+            atr = -(self.five_pricelines[4] - first_price)
+
+            if self.line_position_no < self.get_beyond_priceline_no(self.five_pricelines, open, side):
+                for i in range(10000):
+                    atr += delta
+                    assert (i < 9999)
+                    assert (delta > 0)
+                    self.five_pricelines = [first_price, first_price - 0.2 * atr, first_price - 0.4 * atr,
+                                            first_price - 0.7 * atr,
                                             first_price - atr]
                     if self.line_position_no >= self.get_beyond_priceline_no(self.five_pricelines, open, side):
+                        print("short:atr= %f" % atr)
                         break
 
             elif self.line_position_no > self.get_beyond_priceline_no(self.five_pricelines, open, side):
-                for i in range(1000):
-                    atr-=delta
-                    assert (i < 990)
-                    self.five_pricelines = [first_price, first_price - 0.2 * atr, first_price - 0.4 * atr, first_price - 0.7 * atr,
+                for i in range(10000):
+                    atr -= delta
+                    assert (i < 9999)
+                    assert (delta > 0)
+                    self.five_pricelines = [first_price, first_price - 0.2 * atr, first_price - 0.4 * atr,
+                                            first_price - 0.7 * atr,
                                             first_price - atr]
 
                     if self.line_position_no <= self.get_beyond_priceline_no(self.five_pricelines, open, side):
+                        print("short:atr= %f" % atr)
                         break
 
         return atr
 
+        # To make the position be continuous to the previous unit, lines needs to be adjust at the start of current unit.
 
-    def run_once(self, open, close, hi_price, lo_price, atr=4000):
+    def adjust_five_pricelines(self, open, hi_price, lo_price, side="long"):
+        atr = 0.
+        if side == "long":
+            prev_no = self.line_position_no
+            assert (open > lo_price)
+            assert (prev_no > 0)
+
+            if prev_no == 1:
+                atr = (open - lo_price) / 0.25
+            elif prev_no == 2:
+                atr = (open - lo_price) / 0.6
+            elif prev_no == 3:
+                atr = (open - lo_price) / 0.8
+            elif prev_no == 4:
+                atr = (open - lo_price) / 0.95
+            elif prev_no == 5:
+                atr = (open - lo_price) - 300
+            else:
+                raise Exception("Wrong prev_no")
+
+            self.five_pricelines = [lo_price, lo_price + 0.5 * atr, lo_price + 0.7 * atr, lo_price + 0.9 * atr,
+                                    lo_price + atr]
+
+        elif side == "short":
+            prev_no = self.line_position_no
+            assert (open < hi_price)
+            assert (prev_no > 0)
+
+            if prev_no == 1:
+                atr = (hi_price - open) / 0.25
+            elif prev_no == 2:
+                atr = (hi_price - open) / 0.6
+            elif prev_no == 3:
+                atr = (hi_price - open) / 0.8
+            elif prev_no == 4:
+                atr = (hi_price - open) / 0.95
+            elif prev_no == 5:
+                atr = (hi_price - open) - 300
+            else:
+                raise Exception("Wrong prev_no")
+
+            self.five_pricelines = [hi_price, hi_price - 0.5 * atr, hi_price - 0.7 * atr, hi_price - 0.9 * atr,
+                                    hi_price - atr]
+        else:
+            pass
+
+        assert (atr > 0)
+
+        return atr
+
+    def run_once(self, open, close, hi_price, lo_price,fixed_unit):
+        atr = self.atr
 
         if self.status["side"] == "long":
             if open < lo_price:
-                lo_price = open - 100
+                lo_price = open - 1000
 
-            if close >= lo_price: #continue long
+            self.five_pricelines = [lo_price, lo_price + 0.5 * atr, lo_price + 0.7 * atr, lo_price + 0.9 * atr,
+                                    lo_price + atr]
 
-
-                self.five_pricelines = [lo_price, lo_price + 0.2 * atr, lo_price + 0.4 * atr, lo_price + 0.7 * atr,
-                                        lo_price + atr]
-
-                self.atr=self.adjust_five_pricelines(open, self.atr, side="long")
-
-                if self.line_position_no !=self.get_beyond_priceline_no(self.five_pricelines,open,self.status["side"]):
+            if self.line_position_no != self.get_beyond_priceline_no(self.five_pricelines, open, self.status["side"]):
+                atr = self.adjust_five_pricelines(open, hi_price, lo_price, side="long")
+                if self.line_position_no != self.get_beyond_priceline_no(self.five_pricelines, open,
+                                                                         self.status["side"]):
+                    print("long:after")
                     print(self.line_position_no)
-                    print(self.get_beyond_priceline_no(self.five_pricelines,open,self.status["side"]))
+                    print(self.get_beyond_priceline_no(self.five_pricelines, open, self.status["side"]))
+                    # assert(0)
+
+            if close >= lo_price:  # continue long
 
                 self.clear_all_positions()
                 self.create_all_positions(close, side="long")
-            else: #first time short after change position
-
-                self.five_pricelines = [lo_price, lo_price - 0.2 * atr, lo_price - 0.4 * atr, lo_price - 0.7 * atr,
-                                        lo_price - atr]
-
+            else:  # first time short after change position
                 self.clear_all_positions()
+                atr = self.atr_init
+
+                if not fixed_unit:
+                    self.one_unit_btc=round(self.status["rest"][0]*0.8/(close*5),2)
+                self.five_pricelines = [lo_price, lo_price - 0.1 * atr, lo_price - 0.5 * atr, lo_price - 0.8 * atr,
+                                        lo_price - atr]
                 self.create_all_positions(close, side="short")
                 self.status["side"] = "short"
         elif self.status["side"] == "short":
             if open > hi_price:
-                hi_price = open + 100
+                hi_price = open + 1000
 
-            if close < hi_price:#continue short
+            self.five_pricelines = [hi_price, hi_price - 0.5 * atr, hi_price - 0.7 * atr, hi_price - 0.9 * atr,
+                                    hi_price - atr]
 
-
-                self.five_pricelines = [hi_price, hi_price - 0.2 * atr, hi_price - 0.4 * atr, hi_price - 0.7 * atr,
-                                        hi_price - atr]
-
-                self.atr =self.adjust_five_pricelines(open,self.atr, side="short")
-
+            if self.line_position_no != self.get_beyond_priceline_no(self.five_pricelines, open,
+                                                                     self.status["side"]):
+                atr = self.adjust_five_pricelines(open, hi_price, lo_price, side="short")
                 if self.line_position_no != self.get_beyond_priceline_no(self.five_pricelines, open,
                                                                          self.status["side"]):
+                    print("short:after")
                     print(self.line_position_no)
                     print(self.get_beyond_priceline_no(self.five_pricelines, open, self.status["side"]))
+                    print(self.five_pricelines)
+                    print(open)
+                    # assert (0)
 
-
+            if close < hi_price:  # continue short
                 self.clear_all_positions()
                 self.create_all_positions(close, side="short")
-            else: #first time long after change position
-                self.five_pricelines = [hi_price, hi_price + 0.2 * atr, hi_price + 0.4 * atr, hi_price + 0.7 * atr,
-                                        hi_price + atr]
+            else:  # first time long after change position
                 self.clear_all_positions()
+                atr = self.atr_init
+
+                if not fixed_unit:
+                    self.one_unit_btc=round(self.status["rest"][0]*0.8/(close*5),2)
+
+                self.five_pricelines = [hi_price, hi_price + 0.1 * atr, hi_price + 0.5 * atr, hi_price + 0.8 * atr,
+                                        hi_price + atr]
                 self.create_all_positions(close, side="long")
                 self.status["side"] = "long"
-        else: #Null case#
-
-            if open>lo_price and close < lo_price:
-                self.five_pricelines = [lo_price, lo_price - 0.2 * atr, lo_price - 0.4 * atr, lo_price - 0.7 * atr,
+        else:  # Null case#
+            if open > lo_price and close < lo_price:
+                self.five_pricelines = [lo_price, lo_price - 0.1 * atr, lo_price - 0.5 * atr, lo_price - 0.8 * atr,
                                         lo_price - atr]
                 self.clear_all_positions()
                 self.create_all_positions(close, side="short")
                 self.status["side"] = "short"
-            elif open<hi_price and close > hi_price:
-                self.five_pricelines = [hi_price, hi_price + 0.2 * atr, hi_price + 0.4 * atr, hi_price + 0.7 * atr,
+            elif open < hi_price and close > hi_price:
+                self.five_pricelines = [hi_price, hi_price + 0.1 * atr, hi_price + 0.5 * atr, hi_price + 0.8 * atr,
                                         hi_price + atr]
                 self.clear_all_positions()
                 self.create_all_positions(close, side="long")
@@ -263,7 +337,8 @@ class HILO:
         elif self.status["side"] == "short":
             isShort = 55555;
 
-        self.line_position_no=self.get_beyond_priceline_no(self.five_pricelines, close, self.status["side"])
+        self.line_position_no = self.get_beyond_priceline_no(self.five_pricelines, close, self.status["side"])
+        self.atr = atr
 
         return (value, isLong, isShort)
 
@@ -302,6 +377,7 @@ class HILO:
     def simulate(self, num=100, periods="1m", end_offset=0):
         leverage = 1.0
         fee_ratio = 0.000  # trading fee percent
+        fixed_unit=True
         ################Simulation#######################
         self.initialize_status()
 
@@ -316,7 +392,7 @@ class HILO:
         print(len(long_price))
         print(len(short_price))
 
-        result = np.zeros([len(all), 8])
+        result = np.zeros([len(all), 10])
         for t in range(50, len(all)):
             # (gradient_real, grad_w_real)=self.get_current_GMMA_gradient_realtime(ema[t-1], all[t][2], periods)
             # current hour's operation price initialization
@@ -327,17 +403,19 @@ class HILO:
             low_t = all[t][3]
             close_t = all[t][4]
 
-            (value_t, isLong, isShort) = self.run_once(open_t,close_t, hi_t, lo_t, atr=20000)
+            (value_t, isLong, isShort) = self.run_once(open_t, close_t, hi_t, lo_t,fixed_unit)
             self.append_fake_position()
 
             result[t][0] = isLong
             result[t][1] = isShort
-            result[t][2] = self.status["entry_price"][0]
-            result[t][3] = self.status["entry_price"][1]
-            result[t][4] = self.status["entry_price"][2]
-            result[t][5] = self.status["entry_price"][3]
-            result[t][6] = self.status["entry_price"][4]
-            result[t][7] = value_t
+            result[t][2] = int(self.atr)
+            result[t][3] = int(self.status["entry_price"][0])
+            result[t][4] = int(self.status["entry_price"][1])
+            result[t][5] = int(self.status["entry_price"][2])
+            result[t][6] = int(self.status["entry_price"][3])
+            result[t][7] = int(self.status["entry_price"][4])
+            result[t][8] = self.one_unit_btc
+            result[t][9] = int(value_t)
             print("value_t: %s" % value_t)
             value = value_t
             # self.clear_all_positions()
@@ -346,7 +424,8 @@ class HILO:
             time_stamp, open_price, high_price, low_price, close_price, long_price, short_price, result]
 
         data = pd.DataFrame(all,
-                            columns={"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15"})
+                            columns={"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15",
+                                     "16", "17"})
 
         print("============================")
 
@@ -373,7 +452,7 @@ if __name__ == '__main__':
     counter_sum = 0
     length = 20
     for i in range(length):
-        value = hilo.simulate(num=1 * 24 * 7 * 1 + 50, periods="1H", end_offset=3600 * 24 * 7 * (i + 7))
+        value = hilo.simulate(num=1 * 24 * 7 * 1 + 50, periods="1H", end_offset=3600 * 24 * 7 * (i + 0))
         sum = sum + value
     # hilo.simulate(num=60*24*50+61, periods="1m", end_offset=0)
     # a=hilo.publish_current_limit_price(periods="1H")
