@@ -26,8 +26,7 @@ class HILO:
         self.atr = self.atr_init
 
     def get_ATR(self, HIGH, LOW, CLOSE, timeperiod=14):  # price=1*N (N>61)
-        ma_high = talib.ATR(HIGH, LOW, CLOSE, timeperiod)
-        return ma_high
+        pass
 
     def initialize_status(self):
         self.status = {"side": "null", "entry_size": [], "entry_price": [],
@@ -197,10 +196,9 @@ class HILO:
 
         # To make the position be continuous to the previous unit, lines needs to be adjust at the start of current unit.
 
-    def adjust_five_pricelines(self, open, hi_price, lo_price, side="long"):
+    def adjust_five_pricelines(self, open, hi_price, lo_price, prev_no, side="long"):
         atr = 0.
         if side == "long":
-            prev_no = self.line_position_no
             assert (open > lo_price)
             assert (prev_no > 0)
 
@@ -217,11 +215,10 @@ class HILO:
             else:
                 raise Exception("Wrong prev_no")
 
-            self.five_pricelines = [lo_price, lo_price + 0.5 * atr, lo_price + 0.7 * atr, lo_price + 0.9 * atr,
+            five_pricelines = [lo_price, lo_price + 0.5 * atr, lo_price + 0.7 * atr, lo_price + 0.9 * atr,
                                     lo_price + atr]
 
         elif side == "short":
-            prev_no = self.line_position_no
             assert (open < hi_price)
             assert (prev_no > 0)
 
@@ -238,17 +235,18 @@ class HILO:
             else:
                 raise Exception("Wrong prev_no")
 
-            self.five_pricelines = [hi_price, hi_price - 0.5 * atr, hi_price - 0.7 * atr, hi_price - 0.9 * atr,
+            five_pricelines = [hi_price, hi_price - 0.5 * atr, hi_price - 0.7 * atr, hi_price - 0.9 * atr,
                                     hi_price - atr]
         else:
             pass
 
         assert (atr > 0)
 
-        return atr
+        return (atr, five_pricelines)
 
     def run_once(self, open, close, hi_price, lo_price,fixed_unit):
         atr = self.atr
+        prev_no=self.line_position_no
 
         if self.status["side"] == "long":
             if open < lo_price:
@@ -258,7 +256,7 @@ class HILO:
                                     lo_price + atr]
 
             if self.line_position_no != self.get_beyond_priceline_no(self.five_pricelines, open, self.status["side"]):
-                atr = self.adjust_five_pricelines(open, hi_price, lo_price, side="long")
+                (atr,self.five_pricelines) = self.adjust_five_pricelines(open, hi_price, lo_price,prev_no, side="long")
                 if self.line_position_no != self.get_beyond_priceline_no(self.five_pricelines, open,
                                                                          self.status["side"]):
                     print("long:after")
@@ -289,7 +287,7 @@ class HILO:
 
             if self.line_position_no != self.get_beyond_priceline_no(self.five_pricelines, open,
                                                                      self.status["side"]):
-                atr = self.adjust_five_pricelines(open, hi_price, lo_price, side="short")
+                (atr, self.five_pricelines) = self.adjust_five_pricelines(open, hi_price, lo_price,prev_no, side="short")
                 if self.line_position_no != self.get_beyond_priceline_no(self.five_pricelines, open,
                                                                          self.status["side"]):
                     print("short:after")
@@ -373,6 +371,20 @@ class HILO:
         a = (int(buyprice), int(sellprice))
         print(a)
         return (int(buyprice), int(sellprice))
+
+    def publish_fivelines(self,curr_open,curr_line_no,curr_pos="long",):
+        # (hi_price, lo_price)=self.publish_current_hilo_price()
+        # atr=20000
+        #
+        # if curr_pos=="long":
+        #     if open<lo_price:
+        #         lo_price=open-1000
+        #
+        #     fivelines=[lo_price, lo_price + 0.5 * atr, lo_price + 0.7 * atr, lo_price + 0.9 * atr,
+        #                             lo_price + atr]
+        #     (atr, fivelines)=self.adjust_five_pricelines(open, hi_price, lo_price, curr_line_no, curr_pos)
+        pass
+
 
     def simulate(self, num=100, periods="1m", end_offset=0):
         leverage = 1.0
