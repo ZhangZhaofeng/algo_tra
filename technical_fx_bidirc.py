@@ -28,11 +28,11 @@ class HILO:
         return x.T
 
     def get_HIGH_MA(self, HIGH):  # price=1*N (N>61)
-        ma_high=self.MA(HIGH,16)*1.003
+        ma_high=self.MA(HIGH,16)
         return ma_high
 
     def get_LOW_MA(self, LOW):  # price=1*N (N>61)
-        ma_low=self.MA(LOW,17)*0.998
+        ma_low=self.MA(LOW,17)
         return ma_low
 
     def get_long_price(self, HIGH):
@@ -51,7 +51,7 @@ class HILO:
         high_price_ma = self.get_long_price(high_price)
         (buyprice, sellprice)=(high_price_ma[-1][0],low_price_ma[-1][0])
         a=(int(buyprice), int(sellprice))
-        print(a)
+        # print(a)
         return (int(buyprice), int(sellprice))
 
     def simulate(self, num=100, periods="1m" ,end_offset=0):
