@@ -3,7 +3,7 @@
 
 import time
 from tradingapis.bitflyer_api import pybitflyer
-import keysecret as ks
+import my_keysecret as ks
 import time
 import datetime as dt
 import predict
@@ -305,8 +305,8 @@ class Tenlines:
     def execute_waiting_for_pos_and_lineNo_alignment(self, orig_pos, delta_line_no):
         self.update_mystatus_pos()
         while orig_pos + delta_line_no * self.each_size != self.my_status["position"]:
-            print("A=%s" %orig_pos + delta_line_no * self.each_size)
-            print("B=%s" % self.my_status["position"])
+            print("A=%f" %(orig_pos + delta_line_no * self.each_size))
+            print("B=%f" %(self.my_status["position"]))
 
             self.update_mystatus_pos()
             print("Waiting for that pos aligns with line_no ")
