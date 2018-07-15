@@ -304,7 +304,7 @@ class Tenlines:
 
     def execute_waiting_for_pos_and_lineNo_alignment(self, orig_pos, delta_line_no):
         self.update_mystatus_pos()
-        while orig_pos + delta_line_no * self.each_size != self.my_status["position"]:
+        while abs(orig_pos + delta_line_no * self.each_size - self.my_status["position"])>0.005:
             print("A=%f" %(orig_pos + delta_line_no * self.each_size))
             print("B=%f" %(self.my_status["position"]))
 
