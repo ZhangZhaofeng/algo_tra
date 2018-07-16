@@ -287,13 +287,16 @@ class AutoTrading:
                 # TODO
                 trade_mount = '%.2f' % (abs(checkins[1]))
                 order = self.trade_market('buy', trade_mount)
+                time.sleep(3)
             elif checkins[1] > 0.0:
                 # TODO
                 # sell back
                 trade_mount = '%.2f' % (abs(checkins[1]))
                 order = self.trade_market('sell', trade_mount)
+                time.sleep(3)
             # set an oco
             order = self.trade_oco1(hilo[0], hilo[1], self.init_trade_amount)
+            self.order_exist == True
         return(order)
 
         # check the position
@@ -339,14 +342,15 @@ class AutoTrading:
             if profit < pre_profit:
                 # TODO quit
                 if checkins[1] > 0.0:
-                    trade_mount = '%.2f' % (checkins[1])
+                    trade_mount = abs('%.2f' % (checkins[1]))
                     order = self.trade_market('sell', trade_mount)
                     predict.print_and_write(order)
                 elif checkins[1] < 0.0:
-                    trade_mount = '%.2f' % (checkins[1])
+                    trade_mount = abs('%.2f' % (checkins[1]))
                     order = self.trade_market('buy', trade_mount)
                     predict.print_and_write(order)
-                print('quit position')
+                predict.print_and_write('quit position')
+                self.order_exist == False
                 tdelta = self.bf_timejudge(starttime)
                 if tdelta < 3600:
                     time.sleep(3600-tdelta)
@@ -365,20 +369,23 @@ class AutoTrading:
             trade_mount = '%.2f' % (self.init_trade_amount - checkins[1])
             if trade_mount > 0.0:
                 order = self.trade_stop('buy', hilo[1],  trade_mount)
+                self.order_exist == True
         elif checkins[1] > 0.0:
             # TODO
             # sell double
             trade_mount = '%.2f' % (self.init_trade_amount + checkins[1])
             if trade_mount > 0.0:
                 order = self.trade_stop('sell', hilo[0], trade_mount)
+                self.order_exist == True
         return order
 
 
     def judge_condition(self): # judge position at hour start.
-        cur_time = time.gmtime()
+        starttime = time.gmtime()
         if self.order_exist == True:
             remain_test = self.cancel_order(self.order_id) + 1
-            print('cancel order, remain %f'%(remain_test -1))
+            predict.print_and_write('cancel order, remain %f'%(remain_test -1))
+            self.order_exist == False
 
         checkins = self.get_checkin_price()
         cur_price = self.get_current_price(100)
@@ -399,7 +406,7 @@ class AutoTrading:
         elif checkins[1] != 0.0 and not self.switch_in_hour:
             self.order_id = self.update_order(checkins, hilo)
 
-        self.trade_in_hour(checkins[1], cur_time)
+        self.trade_in_hour(checkins[1], starttime)
 
 
 if __name__ == '__main__':
