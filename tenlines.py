@@ -72,6 +72,7 @@ class Tenlines:
         return dealed_price
 
     def execute_trade(self, type, amount=0.01):
+        print("")
         print("execute_trade:%s" %type)
         i = 0
         try_times_limit = 30
@@ -134,18 +135,23 @@ class Tenlines:
         print("collateral=%s" % self.my_status["rest"])
 
     def update_position(self):
-        res = self.bitflyer_api.getpositions(product_code="FX_BTC_JPY")
+        while True:
+            try:
+               res = self.bitflyer_api.getpositions(product_code="FX_BTC_JPY")
 
-        if res == []:
-            self.my_status["position"] = 0.0
-        else:
-            pos = 0.0
-            for p in res:
-                sign = 1 if p["side"] == 'BUY' else -1
-                size = p["size"]
-                pos += sign * size
+               if res == []:
+                 self.my_status["position"] = 0.0
+               else:
+                 pos = 0.0
+                 for p in res:
+                    sign = 1 if p["side"] == 'BUY' else -1
+                    size = p["size"]
+                    pos += sign * size
 
-            self.my_status["position"] = pos
+                 self.my_status["position"] = pos
+               break
+            except Exception:
+                 continue
 
     def place_stop_order(self, conditional_price, long_short, type, slide=500):
         # need work
@@ -349,7 +355,7 @@ class Tenlines:
         self.curr_dealedprice=self.execute_trade(type, self.each_size)
         self.execute_waiting_for_pos_and_lineNo_alignment(orig_pos, real_delta_line_no)
         slide = self.execute_slide_computation(int(self.curr_dealedprice), type)
-        self.adjust_tenlines_according_to_slide(slide, line_adjust_pattern)
+        #self.adjust_tenlines_according_to_slide(slide, line_adjust_pattern)
         return True
 
 
