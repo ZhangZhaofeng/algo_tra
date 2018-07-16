@@ -26,7 +26,7 @@ class Tenlines:
         print("Initializing Bitflyer API ")
         self.bitflyer_api = pybitflyer.API(api_key=str(ks.bitflyer_api), api_secret=str(ks.bitflyer_secret))
 
-        self.my_status = {"position": 0.00, "rest": 100000.}  # "nth":[entry_cash, entry_price]
+        self.my_status = {"position": 0., "rest": 0., "pnl":0.}  # "nth":[entry_cash, entry_price]
         self.each_size = 0.01
         self.atr_ratio = [0.0, 0.2, 0.4, 0.7, 1.0]
 
@@ -138,17 +138,21 @@ class Tenlines:
         while True:
             try:
                res = self.bitflyer_api.getpositions(product_code="FX_BTC_JPY")
-
+               #print(res)
                if res == []:
                  self.my_status["position"] = 0.0
+                 self.my_status["pnl"] = 0.0
                else:
                  pos = 0.0
+                 pnl = 0.0
                  for p in res:
                     sign = 1 if p["side"] == 'BUY' else -1
                     size = p["size"]
                     pos += sign * size
+                    pnl += p["pnl"]
 
                  self.my_status["position"] = pos
+                 self.my_status["pnl"] = pnl
                break
             except Exception:
                  continue
@@ -424,6 +428,7 @@ class Tenlines:
 if __name__ == '__main__':
     tenlines = Tenlines()
 
-    print(tenlines.get_current_price())
+#    print(tenlines.get_current_price())
 
-    tenlines.hilo_run()
+#    tenlines.hilo_run()
+    tenlines.update_position()
