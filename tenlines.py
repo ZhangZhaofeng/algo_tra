@@ -427,8 +427,6 @@ class Tenlines:
 
 if __name__ == '__main__':
     tenlines = Tenlines()
-
 #    print(tenlines.get_current_price())
-
-#    tenlines.hilo_run()
-    tenlines.update_position()
+    tenlines.hilo_run()
+    # tenlines.update_position()
