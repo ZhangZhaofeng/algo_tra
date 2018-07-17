@@ -73,7 +73,7 @@ class AutoTrading:
                                                   parameters=parameters)
             data2csv.data2csv(
                 [time.strftime('%b:%d:%H:%M'), 'order', 'OCO_STOP', 'amount', '%f' % float(amount), 'buy', '%f' % float(buy), 'sell', '%f' % float(sell)])
-
+            predict.print_and_write('OCO stopmarket buy: %f, sell %f, amount %f' % (float(buy), float(sell), float(amount)))
             if 'parent_order_acceptance_id' in order:
                 return (order)
             else:
@@ -137,11 +137,13 @@ class AutoTrading:
                     side='BUY', size= str(amount))
                 data2csv.data2csv(
                     [time.strftime('%b:%d:%H:%M'), 'order', 'BUY_MARKET', 'amount', '%f' % float(amount)])
+                predict.print_and_write('Buy market ' +amount)
             elif type == "SELL" or type == "sell":
                 order = self.bitflyer_api.sendchildorder(product_code=product, child_order_type='MARKET',
                                                          side='SELL', size=str(amount))
                 data2csv.data2csv(
                     [time.strftime('%b:%d:%H:%M'), 'order', 'SELL_MARKET', 'amount', '%f' % float(amount)])
+                predict.print_and_write('Sell market ' +amount)
             else:
                 print("error!")
             if 'child_order_acceptance_id' in order:
@@ -167,6 +169,7 @@ class AutoTrading:
                                                       parameters=parameters)
                 data2csv.data2csv(
                     [time.strftime('%b:%d:%H:%M'), 'order', 'BUY_STOP', 'amount', '%f' % float(amount)])
+                predict.print_and_write('Buy stop market %f at %f' % (float(amount), price - 500))
             elif type == "SELL" or type == "sell":
                 parameters = [{'product_code': product, 'condition_type': 'STOP', 'side': 'SELL',
                            'trigger_price': str(price+500), 'size': str(amount)}]
@@ -174,6 +177,7 @@ class AutoTrading:
                                                       parameters=parameters)
                 data2csv.data2csv(
                     [time.strftime('%b:%d:%H:%M'), 'order', 'SELL_STOP', 'amount', '%f' % float(amount)])
+                predict.print_and_write('Sell stop market %f at %f' % (float(amount), price + 500))
             else:
                 print("error!")
             if 'parent_order_acceptance_id' in order:
@@ -206,6 +210,10 @@ class AutoTrading:
         b = time.mktime(cur_time)
         tdelta = b - a
         return(tdelta)
+
+    def get_curhour(self):
+        cur_hour = datetime.datetime.fromtimestamp(time.time() - time.time() % 3600)
+        return(cur_hour.timestamp())
 
     def judge_order(self, id):
         i = 20
@@ -353,7 +361,11 @@ class AutoTrading:
             trade_mount = self.init_trade_amount - checkins[1]
             if trade_mount > 0.0:
                 amount_str = '%.2f' % (trade_mount)
-                order = self.trade_market('buy', amount_str)
+                self.trade_market('buy', amount_str)
+                predict.print_and_write('Switch to long')
+            amount_stop = '%.2f' % (self.init_trade_amount*2)
+            order = self.trade_stop('sell', hilo[0], amount_stop)
+            self.order_exist = True
             # buy self.init + checkins[1]
 
         elif hilo[2] <= hilo[0] : # if close < lo and position is positive
@@ -362,24 +374,33 @@ class AutoTrading:
             trade_mount = self.init_trade_amount + checkins[1]
             if trade_mount > 0.0:
                 amount_str = '%.2f' % (trade_mount)
-                order = self.trade_market('sell', amount_str)
+                self.trade_market('sell', amount_str)
+                predict.print_and_write('Switch to short')
+            amount_stop = '%.2f' % (self.init_trade_amount * 2)
+            order = self.trade_stop('buy', hilo[1], amount_stop)
+            self.order_exist = True
+
 
         elif cur_price > hilo[0] and cur_price < hilo[1]:
+            predict.print_and_write('Switch to middle')
             # TODO
             if checkins[1] < 0.0:
                 # TODO
                 trade_mount = '%.2f' % (abs(checkins[1]))
-                order = self.trade_market('buy', trade_mount)
+                self.trade_market('buy', trade_mount)
+                predict.print_and_write('Buy short back')
                 time.sleep(3)
             elif checkins[1] > 0.0:
                 # TODO
                 # sell back
                 trade_mount = '%.2f' % (abs(checkins[1]))
-                order = self.trade_market('sell', trade_mount)
+                self.trade_market('sell', trade_mount)
+                predict.print_and_write('Sell long back')
                 time.sleep(3)
             # set an oco
             order = self.trade_oco1(hilo[0], hilo[1], self.init_trade_amount)
             self.order_exist = True
+        return(order)
 
         # check the position
 
@@ -405,7 +426,7 @@ class AutoTrading:
                 self.trial_order(checkins, trial_loss_cut, starttime)
                 self.switch_in_hour = False
             else:
-
+                print('.')
                 time.sleep(60)
             tdelta = self.bf_timejudge(starttime)
 
@@ -415,6 +436,8 @@ class AutoTrading:
         profit = 0
         pre_profit = -trial_loss_cut
         tdelta = self.bf_timejudge(starttime)
+        predict.print_and_write('Use a trial order')
+        predict.print_and_write('Current position: %f, price: %f' % (checkins[1], checkins[0]))
         while tdelta < 3600:
             cur_price = self.get_current_price(100)
             if checkins[1] > 0:
@@ -432,8 +455,8 @@ class AutoTrading:
                     trade_mount = '%.2f' % abs(checkins[1])
                     order = self.trade_market('buy', trade_mount)
                     predict.print_and_write(order)
-                predict.print_and_write('quit position')
-                self.order_exist == False
+                predict.print_and_write('Quit position')
+                self.order_exist = False
                 tdelta = self.bf_timejudge(starttime)
                 if tdelta < 3600:
                     time.sleep(3600-tdelta)
@@ -443,6 +466,7 @@ class AutoTrading:
                 temp_pre_profit = profit - trial_loss_cut
                 if temp_pre_profit > pre_profit:
                     pre_profit = temp_pre_profit
+            predict.print_and_write('Profit: %f' % profit)
             time.sleep(60)
             tdelta = self.bf_timejudge(starttime)
 
@@ -455,7 +479,8 @@ class AutoTrading:
             if trade_mount > 0.0:
                 amount_str = '%.2f' % (trade_mount)
                 order = self.trade_stop('buy', hilo[1],  amount_str)
-                self.order_exist == True
+                predict.print_and_write('Update a buy stop order')
+                self.order_exist = True
         elif checkins[1] > 0.0:
             # TODO
             # sell double
@@ -463,19 +488,21 @@ class AutoTrading:
             if trade_mount > 0.0:
                 amount_str = '%.2f' % (trade_mount)
                 order = self.trade_stop('sell', hilo[0], amount_str)
-                self.order_exist == True
+                predict.print_and_write('Update a sell stop order')
+                self.order_exist = True
         return order
 
 
     def judge_condition(self): # judge position at hour start.
-        starttime = time.gmtime()
+        starttime = time.gmtime(self.get_curhour())
         if self.order_exist == True:
             remain_test = self.cancel_order(self.order_id) + 1
             predict.print_and_write('cancel order, remain %f'%(remain_test -1))
-            self.order_exist == False
+            self.order_exist = False
 
         checkins = self.get_checkin_price()
         cur_price = self.get_current_price(100)
+        predict.print_and_write('Current price: %f' % (cur_price))
         hilo = self.get_hilo()
 
         # if keep a position and transfor in this hour. ckeck position again:
@@ -483,17 +510,18 @@ class AutoTrading:
             if checkins[1] == 0.0:
                 predict.print_and_write('No position exist, trade none position')
             else:
-                predict.print_and_write('Trade with position and init position')
-            self.trade_hour_init(checkins, cur_price, hilo)
+                predict.print_and_write('Trade with position %f and init position'%checkins[1])
+            order = self.trade_hour_init(checkins, cur_price, hilo)
             #self.order_id = order['parent_order_acceptance_id']
 
             # we should verify the order is dealing or not here
-            time.sleep(1) # in 200s , we should obvious the position change.
+            time.sleep(10) # in 200s , we should obvious the position change.
             checkins = self.get_checkin_price()
-            order = self.update_order(checkins, hilo)
+            #order = self.update_order(checkins, hilo)
             self.order_id = order['parent_order_acceptance_id']
 
         elif checkins[1] != 0.0 and not self.switch_in_hour:
+            predict.print_and_write('Update order')
             order = self.update_order(checkins, hilo)
             self.order_id = order['parent_order_acceptance_id']
 
