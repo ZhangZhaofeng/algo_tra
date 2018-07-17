@@ -156,7 +156,6 @@ class AutoTrading:
 
     def trade_stop(self, type, price, amount):
         self.maintance_time()
-        self.maintance_time()
         product = 'FX_BTC_JPY'
         print('trade bitflyer')
         expire_time = 575
