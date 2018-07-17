@@ -508,7 +508,7 @@ class AutoTrading:
             predict.print_and_write(Exception)
 
 def sendamail(title ,str):
-    address = 'phoenixflame11@rakuten.jp'  # change the reciver e-mail address to yours
+    address = '@'  # change the reciver e-mail address to yours
     username = 'goozzfgle@gmail.com'
     paswd = ''
 
