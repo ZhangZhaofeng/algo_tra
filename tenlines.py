@@ -310,7 +310,14 @@ class Tenlines:
 
             self.update_mystatus_pos()
             print("Waiting for that pos aligns with line_no ")
+            time.sleep(0.5)
         print("pos aligning with line_no is verified")
+
+    def adjust_tenlines_by_delta(self, all_lines,delta):
+        assert(len(all_lines)>0)
+        new_lines=[item+delta for item in all_lines]
+
+        return new_lines
 
     def execute_slide_computation(self, dealed_price, type):
         line_no = int(self.my_status["position"] / self.each_size)
@@ -334,22 +341,14 @@ class Tenlines:
 
         orig_pos = self.my_status["position"]
         type = "BUY" if delta_line_no > 0 else "SELL"
-        real_delta_line_no = 1 if delta_line_no > 0 else -1
-        if delta_line_no > 1:
-            line_adjust_pattern = "long_all"
-        elif delta_line_no == 1:
-            line_adjust_pattern = "long_neigbour"
-        elif delta_line_no == -1:
-            line_adjust_pattern = "short_all"
-        elif delta_line_no < -1:
-            line_adjust_pattern = "short_neigbour"
-        else:
-            raise Exception("Unknown error")
 
+        real_delta_line_no = 1 if delta_line_no > 0 else -1
         self.curr_dealedprice=self.execute_trade(type, self.each_size)
         self.execute_waiting_for_pos_and_lineNo_alignment(orig_pos, real_delta_line_no)
+
         slide = self.execute_slide_computation(int(self.curr_dealedprice), type)
-        self.adjust_tenlines_according_to_slide(slide, line_adjust_pattern)
+        delta=500
+        self.tenlines=self.adjust_tenlines_by_delta(self.tenlines, -real_delta_line_no*delta)
         return True
 
 
