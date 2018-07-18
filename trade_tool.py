@@ -26,7 +26,7 @@ class Tenlines:
         print("Initializing Bitflyer API ")
         self.bitflyer_api = pybitflyer.API(api_key=str(ks.bitflyer_api), api_secret=str(ks.bitflyer_secret))
 
-        self.my_status = {"position": 0., "rest": 0., "pnl":0.}  # "nth":[entry_cash, entry_price]
+        self.my_status = {"position": 0.00, "rest": 100000.}  # "nth":[entry_cash, entry_price]
         self.each_size = 0.01
         self.atr_ratio = [0.0, 0.2, 0.4, 0.7, 1.0]
 
@@ -138,21 +138,17 @@ class Tenlines:
         while True:
             try:
                res = self.bitflyer_api.getpositions(product_code="FX_BTC_JPY")
-               #print(res)
+
                if res == []:
                  self.my_status["position"] = 0.0
-                 self.my_status["pnl"] = 0.0
                else:
                  pos = 0.0
-                 pnl = 0.0
                  for p in res:
                     sign = 1 if p["side"] == 'BUY' else -1
                     size = p["size"]
                     pos += sign * size
-                    pnl += p["pnl"]
 
                  self.my_status["position"] = pos
-                 self.my_status["pnl"] = pnl
                break
             except Exception:
                  continue
@@ -320,14 +316,7 @@ class Tenlines:
 
             self.update_mystatus_pos()
             print("Waiting for that pos aligns with line_no ")
-            time.sleep(0.5)
         print("pos aligning with line_no is verified")
-
-    def adjust_tenlines_by_delta(self, all_lines,delta):
-        assert(len(all_lines)>0)
-        new_lines=[item+delta for item in all_lines]
-
-        return new_lines
 
     def execute_slide_computation(self, dealed_price, type):
         line_no = int(self.my_status["position"] / self.each_size)
@@ -351,15 +340,22 @@ class Tenlines:
 
         orig_pos = self.my_status["position"]
         type = "BUY" if delta_line_no > 0 else "SELL"
-
         real_delta_line_no = 1 if delta_line_no > 0 else -1
+        if delta_line_no > 1:
+            line_adjust_pattern = "long_all"
+        elif delta_line_no == 1:
+            line_adjust_pattern = "long_neigbour"
+        elif delta_line_no == -1:
+            line_adjust_pattern = "short_all"
+        elif delta_line_no < -1:
+            line_adjust_pattern = "short_neigbour"
+        else:
+            raise Exception("Unknown error")
+
         self.curr_dealedprice=self.execute_trade(type, self.each_size)
         self.execute_waiting_for_pos_and_lineNo_alignment(orig_pos, real_delta_line_no)
-
         slide = self.execute_slide_computation(int(self.curr_dealedprice), type)
-        delta=500
-        self.tenlines=self.adjust_tenlines_by_delta(self.tenlines, -real_delta_line_no*delta)
-
+        #self.adjust_tenlines_according_to_slide(slide, line_adjust_pattern)
         return True
 
 
@@ -427,6 +423,7 @@ class Tenlines:
 
 if __name__ == '__main__':
     tenlines = Tenlines()
-#    print(tenlines.get_current_price())
-    tenlines.hilo_run()
-    # tenlines.update_position()
+
+    print(tenlines.get_current_price())
+
+    tenlines.trade_bitflyer_fx(type="BUY", amount=0.01)
