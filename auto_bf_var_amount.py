@@ -211,7 +211,7 @@ class AutoTrading:
         return(tdelta)
 
     def get_curhour(self):
-        cur_hour = datetime.datetime.fromtimestamp(time.time() - time.time() % 3600)
+        cur_hour = datetime.datetime.fromtimestamp(time.time() - time.time() % 3600 + 60)
         return(cur_hour.timestamp())
 
     def judge_order(self, id):
@@ -397,7 +397,7 @@ class AutoTrading:
                 predict.print_and_write('Sell long back')
                 time.sleep(3)
             # set an oco
-            order = self.trade_oco1(hilo[0], hilo[1], self.init_trade_amount)
+            order = self.trade_oco1(hilo[1], hilo[0], self.init_trade_amount)
             self.order_exist = True
         return(order)
 
@@ -493,6 +493,7 @@ class AutoTrading:
 
 
     def judge_condition(self): # judge position at hour start.
+        time.sleep(80)
         starttime = time.gmtime(self.get_curhour())
         if self.order_exist == True:
             remain_test = self.cancel_order(self.order_id) + 1
@@ -535,9 +536,9 @@ class AutoTrading:
             predict.print_and_write(Exception)
 
 def sendamail(title ,str):
-    address = '@'  # change the reciver e-mail address to yours
+    address = 'phoenixflame11@rakuten.jp'  # change the reciver e-mail address to yours
     username = 'goozzfgle@gmail.com'
-    paswd = ''
+    paswd = 'googlebaidu1'
 
     mail_str = '%s %s' % (str, formatdate(None, True, None))
     sender = SendMail(address, username, paswd)
