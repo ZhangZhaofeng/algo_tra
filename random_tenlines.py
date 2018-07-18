@@ -26,7 +26,7 @@ class Tenlines:
         print("Initializing Bitflyer API ")
         self.bitflyer_api = pybitflyer.API(api_key=str(ks.bitflyer_api), api_secret=str(ks.bitflyer_secret))
 
-        self.my_status = {"position": 0.00, "rest": 100000.}  # "nth":[entry_cash, entry_price]
+        self.my_status = {"position": 0., "rest": 0., "pnl": 0.}  # "nth":[entry_cash, entry_price]
         self.each_size = 0.01
         self.atr_ratio = [0.0, 0.2, 0.4, 0.7, 1.0]
 
@@ -73,6 +73,7 @@ class Tenlines:
         return dealed_price
 
     def execute_trade(self, type, amount=0.01):
+        print("")
         print("execute_trade:%s" %type)
         i = 0
         try_times_limit = 30
@@ -86,6 +87,7 @@ class Tenlines:
                 return curr_dealedprice
             except Exception:
                 print("Exception catched while trading, trying again.")
+                raise Exception
                 time.sleep(0.5)
                 continue
 
@@ -135,18 +137,27 @@ class Tenlines:
         print("collateral=%s" % self.my_status["rest"])
 
     def update_position(self):
-        res = self.bitflyer_api.getpositions(product_code="FX_BTC_JPY")
+        while True:
+            try:
+               res = self.bitflyer_api.getpositions(product_code="FX_BTC_JPY")
+               #print(res)
+               if res == []:
+                 self.my_status["position"] = 0.0
+                 self.my_status["pnl"] = 0.0
+               else:
+                 pos = 0.0
+                 pnl = 0.0
+                 for p in res:
+                    sign = 1 if p["side"] == 'BUY' else -1
+                    size = p["size"]
+                    pos += sign * size
+                    pnl += p["pnl"]
 
-        if res == []:
-            self.my_status["position"] = 0.0
-        else:
-            pos = 0.0
-            for p in res:
-                sign = 1 if p["side"] == 'BUY' else -1
-                size = p["size"]
-                pos += sign * size
-
-            self.my_status["position"] = pos
+                 self.my_status["position"] = pos
+                 self.my_status["pnl"] = pnl
+               break
+            except Exception:
+                 continue
 
     def place_stop_order(self, conditional_price, long_short, type, slide=500):
         # need work
@@ -320,10 +331,10 @@ class Tenlines:
 
         if type == "BUY":
             index = int(line_no + 4)
-            slide = dealed_price - self.tenlines[index]
+            slide = dealed_price - self.all_lines[index]
         elif type == "SELL":
             index = int(line_no + 5)
-            slide = self.tenlines[index] - dealed_price
+            slide = self.all_lines[index] - dealed_price
         else:
             raise Exception["side error"]
         
@@ -331,44 +342,32 @@ class Tenlines:
         return slide
 
     def pos_adjustment(self, delta_line_no):
-        if delta_line_no == 0:
+        if delta_line_no == 0.:
             return True
 
         orig_pos = self.my_status["position"]
-        type = "BUY" if delta_line_no > 0 else "SELL"
-        real_delta_line_no = 1 if delta_line_no > 0 else -1
-        if delta_line_no > 1:
-            line_adjust_pattern = "long_all"
-        elif delta_line_no == 1:
-            line_adjust_pattern = "long_neigbour"
-        elif delta_line_no == -1:
-            line_adjust_pattern = "short_all"
-        elif delta_line_no < -1:
-            line_adjust_pattern = "short_neigbour"
-        else:
-            raise Exception("Unknown error")
-
+        type = "BUY" if delta_line_no > 0. else "SELL"
+        real_delta_line_no = 1 if delta_line_no > 0. else -1
         self.curr_dealedprice=self.execute_trade(type, self.each_size)
         self.execute_waiting_for_pos_and_lineNo_alignment(orig_pos, real_delta_line_no)
         slide = self.execute_slide_computation(int(self.curr_dealedprice), type)
-        #self.adjust_tenlines_according_to_slide(slide, line_adjust_pattern)
         return True
 
     def clear_all_position(self):
         self.update_mystatus_pos()
         amount= self.my_status["position"]
-        if abs(amount)>0.0:
+        if abs(amount)>0.001:
             type = "BUY" if amount < 0 else "SELL"
-            self.execute_trade(type, amount)
+            self.execute_trade(type, abs(amount))
 
-        while abs(self.my_status["position"])>0.0:
+        while abs(self.my_status["position"])>0.001:
             self.update_mystatus_pos()
             time.sleep(0.5)
 
     def adjust_tenlines_by_delta(self, all_lines,delta):
         assert(len(all_lines)>0)
         new_lines=[item+delta for item in all_lines]
-
+        print(new_lines)
         return new_lines
 
     def adjust_tenlines_according_to_slide(self, slide, pattern):
@@ -432,17 +431,17 @@ class Tenlines:
                     self.pos_adjustment(delta_line_no)
                 time.sleep(0.5)
 
-    def create_tenlines(self,current_price, interval=1000):
+    def create_tenlines(self,current_price, interval=1500):
         hi_lines=[]
         lo_lines=[]
 
-        for i in range(4):
+        for i in range(5):
             if i==0:
-                hi=current_price+500
-                lo=current_price-500
+                hi=current_price+100
+                lo=current_price-100
             else:
-                hi=current_price+500+i*interval
-                lo=current_price-500-i*interval
+                hi=current_price+100+i*interval
+                lo=current_price-100-i*interval
 
             hi_lines.append(hi)
             lo_lines.append(lo)
@@ -462,22 +461,28 @@ class Tenlines:
             current_price=self.get_current_price()
             self.all_lines =self.create_tenlines(current_price)
 
-            print(self.all_lines)
             while True:
                 delta_line_no = self.pos_change_watcher(self.all_lines, self.get_current_price())
                 print("time:%s  current_price: %s pos: %s" % (time.strftime('%Y/%m/%d,%H:%M:%S'),
                                                               self.get_current_price(), self.my_status["position"]), end="\r")
 
+                delta=200
                 if delta_line_no > 0 and abs(self.my_status["position"])<0.001: #rise at the first time
                     self.pos_adjustment(delta_line_no)
-                    self.all_lines=self.adjust_tenlines_by_delta(self.all_lines,-300)
+                    self.all_lines=self.adjust_tenlines_by_delta(self.all_lines,-delta)
                 elif delta_line_no<0 and abs(self.my_status["position"])<0.001: #drop at the first time
                     self.pos_adjustment(delta_line_no)
-                    self.all_lines = self.adjust_tenlines_by_delta(self.all_lines, 300)
-                elif delta_line_no>0 and self.my_status["position"]<-0.0: #drop after rising
+                    self.all_lines = self.adjust_tenlines_by_delta(self.all_lines,delta)
+                elif delta_line_no > 0 and self.my_status["position"]>0.001: #rise at the first time
+                    self.pos_adjustment(delta_line_no)
+                    self.all_lines=self.adjust_tenlines_by_delta(self.all_lines,-delta)
+                elif delta_line_no<0 and self.my_status["position"]<-0.001: #drop at the first time
+                    self.pos_adjustment(delta_line_no)
+                    self.all_lines = self.adjust_tenlines_by_delta(self.all_lines, delta)
+                elif delta_line_no>0 and self.my_status["position"]<-0.001: #drop after rising
                     self.clear_all_position()
                     break
-                elif delta_line_no<0 and self.my_status["position"]>0.0: #rise after dropping
+                elif delta_line_no<0 and self.my_status["position"]>0.001: #rise after dropping
                     self.clear_all_position()
                     break
                 else:
