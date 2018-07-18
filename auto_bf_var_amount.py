@@ -211,7 +211,7 @@ class AutoTrading:
         return(tdelta)
 
     def get_curhour(self):
-        cur_hour = datetime.datetime.fromtimestamp(time.time() - time.time() % 3600 + 60)
+        cur_hour = datetime.datetime.fromtimestamp(time.time() - time.time() % 3600 +2)
         return(cur_hour.timestamp())
 
     def judge_order(self, id):
