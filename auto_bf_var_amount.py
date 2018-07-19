@@ -493,7 +493,7 @@ class AutoTrading:
 
 
     def judge_condition(self): # judge position at hour start.
-        time.sleep(80)
+        time.sleep(10)
         starttime = time.gmtime(self.get_curhour())
         if self.order_exist == True:
             remain_test = self.cancel_order(self.order_id) + 1
