@@ -357,7 +357,7 @@ class Tenlines:
         self.execute_waiting_for_pos_and_lineNo_alignment(orig_pos, real_delta_line_no)
 
         slide = self.execute_slide_computation(int(self.curr_dealedprice), type)
-        delta=500
+        delta=0
         self.tenlines=self.adjust_tenlines_by_delta(self.tenlines, -real_delta_line_no*delta)
 
         return True
