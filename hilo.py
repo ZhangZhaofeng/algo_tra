@@ -242,9 +242,9 @@ class Hilo:
         buffer = 700
         self.flag=0
         (hi_price, lo_price) = hilo_price
-        print("hi= %s lo=%s" %(hi_price, lo_price))
         print("open%s" % open_price)
         if self.my_status["position"] > 0.0005: # current long position
+            print("lo= %s profit_line=%s" % (lo_price,self.profit_line))
             if open_price < max([lo_price, self.profit_line]):
                 if open_price<lo_price:
                     self.curr_dealedprice = self.execute_trade("sell", self.each_size * 2)
@@ -276,6 +276,7 @@ class Hilo:
             else:
                 pass
         elif self.my_status["position"] < -0.0005: # current short position
+            print("hi= %s profit_line=%s" % (hi_price,self.profit_line))
             if open_price > min([hi_price, self.profit_line]):
                 if open_price>hi_price:
                     self.curr_dealedprice = self.execute_trade("buy", self.each_size * 2)
