@@ -240,30 +240,38 @@ class Hilo:
         orig_pos = self.my_status["position"]
         target_diff = [2000, 4000, 6000, 8000, 10000]
         buffer = 700
+        self.flag=0
         (hi_price, lo_price) = hilo_price
+        print("hilo_price= %s" %hilo_price)
         if self.my_status["position"] > 0.0005: # current long position
             if open_price < max([lo_price, self.profit_line]):
                 if open_price<lo_price:
                     self.curr_dealedprice = self.execute_trade("sell", self.each_size * 2)
                     self.waitfor_position_match(orig_pos, -self.each_size * 2)
-                    self.profit_line=0.0
                 else:
                     self.curr_dealedprice = self.execute_trade("sell", self.each_size * 1)
                     self.waitfor_position_match(orig_pos, -self.each_size * 1)
-                    self.profit_line = 0.0
+
                 self.execute_slide_computation(dealed_price=self.curr_dealedprice,
                                                order_price=open_price,
                                                type="sell")
-            elif open_price - self.curr_dealedprice > target_diff[0]:
+                self.profit_line = 0.0
+                self.flag = 0
+            elif open_price - self.curr_dealedprice > target_diff[0] and self.flag==0:
                 self.profit_line = self.curr_dealedprice + target_diff[0] - buffer
-            elif open_price - self.curr_dealedprice > target_diff[1]:
+                self.flag=1
+            elif open_price - self.curr_dealedprice > target_diff[1] and self.flag==1:
                 self.profit_line = self.curr_dealedprice + target_diff[1] - buffer
-            elif open_price - self.curr_dealedprice > target_diff[2]:
+                self.flag=2
+            elif open_price - self.curr_dealedprice > target_diff[2] and self.flag==2:
                 self.profit_line = self.curr_dealedprice + target_diff[2] - buffer
-            elif open_price - self.curr_dealedprice > target_diff[3]:
+                self.flag =3
+            elif open_price - self.curr_dealedprice > target_diff[3] and self.flag==3:
                 self.profit_line = self.curr_dealedprice + target_diff[3] - buffer
-            elif open_price - self.curr_dealedprice > target_diff[4]:
+                self.flag = 4
+            elif open_price - self.curr_dealedprice > target_diff[4] and self.flag==4:
                 self.profit_line = self.curr_dealedprice + target_diff[4] - buffer
+                self.flag = 5
             else:
                 pass
         elif self.my_status["position"] < -0.0005: # current short position
@@ -271,24 +279,30 @@ class Hilo:
                 if open_price>hi_price:
                     self.curr_dealedprice = self.execute_trade("buy", self.each_size * 2)
                     self.waitfor_position_match(orig_pos, self.each_size * 2)
-                    self.profit_line = 0.0
+
                 else:
                     self.curr_dealedprice = self.execute_trade("buy", self.each_size * 1)
                     self.waitfor_position_match(orig_pos, self.each_size * 1)
-                    self.profit_line = 0.0
                 self.execute_slide_computation(dealed_price=self.curr_dealedprice,
                                                order_price=open_price,
                                                type="buy")
-            elif self.curr_dealedprice-open_price > target_diff[0]:
+                self.profit_line = 0.0
+                self.flag = 0
+            elif self.curr_dealedprice-open_price > target_diff[0] and self.flag==0:
                 self.profit_line = self.curr_dealedprice - target_diff[0] + buffer
-            elif self.curr_dealedprice-open_price > target_diff[1]:
+                self.flag = 1
+            elif self.curr_dealedprice-open_price > target_diff[1] and self.flag==1:
                 self.profit_line = self.curr_dealedprice - target_diff[1] + buffer
-            elif self.curr_dealedprice-open_price > target_diff[2]:
+                self.flag = 2
+            elif self.curr_dealedprice-open_price > target_diff[2] and self.flag==2:
                 self.profit_line = self.curr_dealedprice - target_diff[2] + buffer
-            elif self.curr_dealedprice-open_price > target_diff[3]:
+                self.flag = 3
+            elif self.curr_dealedprice-open_price > target_diff[3] and self.flag==3:
                 self.profit_line = self.curr_dealedprice - target_diff[3] + buffer
-            elif self.curr_dealedprice-open_price > target_diff[4]:
+                self.flag = 4
+            elif self.curr_dealedprice-open_price > target_diff[4] and self.flag==4:
                 self.profit_line = self.curr_dealedprice - target_diff[4] + buffer
+                self.flag = 5
             else:
                 pass
         elif abs(self.my_status["position"]) < 0.0005: #"Null"
@@ -315,6 +329,7 @@ class Hilo:
             print("candle_beginning_process")
             hilo_price = self.get_hilo_price(num=100, periods="1m")
             open_price = self.get_last_close()
+            print("hilo:%s open_price:%s" % (hilo_price, open_price))
             self.hilo_watcher(hilo_price, open_price)
             return True
 
