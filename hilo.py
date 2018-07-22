@@ -242,7 +242,8 @@ class Hilo:
         buffer = 700
         self.flag=0
         (hi_price, lo_price) = hilo_price
-        print("hilo_price= %s" %hilo_price)
+        print("hi= %s lo=%s" %(hi_price, lo_price))
+        print("open%s" % open_price)
         if self.my_status["position"] > 0.0005: # current long position
             if open_price < max([lo_price, self.profit_line]):
                 if open_price<lo_price:
@@ -329,7 +330,6 @@ class Hilo:
             print("candle_beginning_process")
             hilo_price = self.get_hilo_price(num=100, periods="1m")
             open_price = self.get_last_close()
-            print("hilo:%s open_price:%s" % (hilo_price, open_price))
             self.hilo_watcher(hilo_price, open_price)
             return True
 
