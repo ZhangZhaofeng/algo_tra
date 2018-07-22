@@ -19,7 +19,7 @@ import smtplib
 
 class Hilo:
     def __init__(self):
-        print("Tenlines Algo Starts")
+        print("hilo Algo 1min Starts")
         self.hilo = tfb.HILO()
         # print(mytrade.get_asset_quoinex())
 
@@ -32,6 +32,10 @@ class Hilo:
 
         self.curr_dealedprice = 0.0
         self.tenlines = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        self.profit_line=0.0
+
+        self.last_open = 0.0
+        self.last_close=0.0
 
         self.update_mystatus_pos()
 
@@ -176,26 +180,6 @@ class Hilo:
         # print(orders)
         return orders[0]
 
-    def verify_order(self, long_short):
-        counter = 0
-        while 1:
-            if self.check_order(long_short):
-                return True
-            elif counter > 20:
-                return False
-            else:
-                time.sleep(5)
-                counter += 1
-
-    def verify_order_or_position(self, long_short):
-        # Wait until the placed order is verified successfully
-        if not self.verify_order(long_short):
-            if self.check_position() != long_short:
-                print("Order verification fails. Trying again")
-            else:
-                print("Order is filled immediately")
-        else:
-            print("Order is verified")
 
     def adjust_hilo(self, hilo, open):
         (hi, lo) = hilo
@@ -212,104 +196,16 @@ class Hilo:
 
         return (hi, lo)
 
-    def get_curr_line_no(self, all_pricelines, price):
-        for i in range(len(all_pricelines)):
-            if all_pricelines[i] > price:
-                return i - 5;
+    def get_last_open_close(self):
+        return self.hilo.get_last_open_close(periods="1m")
 
-        return len(all_pricelines) - 5
+    def get_last_open(self):
+        (last_open,last_close)=self.get_last_open_close()
+        return last_open
 
-    def get_prev_line_no(self):
-        if self.my_status["position"] > 0.0:
-            line_no = int(self.my_status["position"] / self.each_size)
-        elif self.my_status["position"] < 0.0:
-            line_no = int(self.my_status["position"] / self.each_size)
-        else:
-            line_no = 0
-
-        return line_no
-
-    def adjust_tenlines(self, tenlines, open, prev_no, curr_no):
-        atr = 0.
-        new_tenlines = []
-
-        five_shortlines = tenlines[0:5]
-        five_longlines = tenlines[5:10]
-
-        print("prev_no = %s" % prev_no)
-        print("curr_no = %s" % curr_no)
-        print("open = %s" % open)
-
-        if curr_no != prev_no:
-            print("adjusting ten lines")
-
-            if prev_no > 0:
-                hi_price = tenlines[5]
-                assert (open > hi_price)  # Due to adjust_hilo(), open must be larger than hi_price
-
-                if prev_no == 1:
-                    atr = (open - hi_price) / 0.1
-                elif prev_no == 2:
-                    atr = (open - hi_price) / 0.3
-                elif prev_no == 3:
-                    atr = (open - hi_price) / 0.55
-                elif prev_no == 4:
-                    atr = (open - hi_price) / 0.85
-                elif prev_no == 5:
-                    atr = (open - hi_price) - 800
-                else:
-                    raise Exception("Wrong prev_no")
-
-                five_longlines = [int(hi_price + self.atr_ratio[0] * atr), int(hi_price + self.atr_ratio[1] * atr),
-                                  int(hi_price + self.atr_ratio[2] * atr), int(hi_price + self.atr_ratio[3] * atr),
-                                  int(hi_price + self.atr_ratio[4] * atr)]
-
-            elif prev_no < 0:
-                lo_price = tenlines[4]
-                assert (open < lo_price)  # Due to adjust_hilo(), open must be smaller than lo_price
-
-                if prev_no == -1:
-                    atr = (lo_price - open) / 0.1
-                elif prev_no == -2:
-                    atr = (lo_price - open) / 0.3
-                elif prev_no == -3:
-                    atr = (lo_price - open) / 0.55
-                elif prev_no == -4:
-                    atr = (lo_price - open) / 0.85
-                elif prev_no == -5:
-                    atr = (lo_price - open) - 800
-                else:
-                    raise Exception("Wrong prev_no")
-
-                five_shortlines = [int(lo_price - self.atr_ratio[4] * atr), int(lo_price - self.atr_ratio[3] * atr),
-                                   int(lo_price - self.atr_ratio[2] * atr),
-                                   int(lo_price - self.atr_ratio[1] * atr), int(lo_price - self.atr_ratio[0] * atr)]
-            else:  # prev_no==0
-                raise Exception("Impossible case!")
-
-            new_tenlines.extend(five_shortlines)
-            new_tenlines.extend(five_longlines)
-
-            return new_tenlines
-
-        else:
-            print("using current ten lines")
-            return tenlines
-
-    def get_orig_tenlines(self, hilo, atr=20000):
-        (hi, lo) = hilo
-        five_longlines = []
-        five_shortlines = []
-        tenlines = []
-        for i in range(len(self.atr_ratio)):
-            five_longlines.append(int(hi + self.atr_ratio[i] * atr))
-            five_shortlines.append(int(lo - self.atr_ratio[i] * atr))
-
-        five_shortlines.reverse()
-        tenlines.extend(five_shortlines)
-        tenlines.extend(five_longlines)
-
-        return tenlines
+    def get_last_close(self):
+        (last_open, last_close) = self.get_last_open_close()
+        return last_close
 
     def pos_change_watcher(self, tenlines, curr_price):
         position_no = int(self.my_status["position"] / self.each_size)
@@ -317,59 +213,131 @@ class Hilo:
 
         return int(curr_line_no - position_no)
 
-    def execute_waiting_for_pos_and_lineNo_alignment(self, orig_pos, delta_line_no):
+    def waitfor_position_match(self,orig_size,trade_size):
         self.update_mystatus_pos()
-        while abs(orig_pos + delta_line_no * self.each_size - self.my_status["position"]) > 0.005:
-            print("A=%f" % (orig_pos + delta_line_no * self.each_size))
-            print("B=%f" % (self.my_status["position"]))
-
+        counter=0
+        while abs(self.my_status["position"]-orig_size-trade_size)>0.0005:
             self.update_mystatus_pos()
-            print("Waiting for that pos aligns with line_no ")
             time.sleep(0.5)
-        print("pos aligning with line_no is verified")
+            counter+=1
+            if counter>1000:
+                raise Exception["waitfor_position_match error"]
 
-    def adjust_tenlines_by_delta(self, all_lines, delta):
-        assert (len(all_lines) > 0)
-        new_lines = [item + delta for item in all_lines]
-
-        return new_lines
-
-    def execute_slide_computation(self, dealed_price, type):
-        line_no = int(self.my_status["position"] / self.each_size)
+    def execute_slide_computation(self, dealed_price, order_price, type):
         slide = 0.
-
-        if type == "BUY":
-            index = int(line_no + 4)
-            slide = dealed_price - self.tenlines[index]
-        elif type == "SELL":
-            index = int(line_no + 5)
-            slide = self.tenlines[index] - dealed_price
+        if type=="buy":
+            slide=dealed_price-order_price
+        elif type=="sell":
+            slide=order_price-dealed_price
         else:
-            raise Exception["side error"]
-
+            raise Exception["Type error!"]
+        print("")
         print("slide=%s" % slide)
         return slide
 
+    def hilo_watcher(self, hilo_price, open_price):
+        self.update_mystatus_pos()
+        orig_pos = self.my_status["position"]
+        target_diff = [2000, 4000, 6000, 8000, 10000]
+        buffer = 700
+        (hi_price, lo_price) = hilo_price
+        if self.my_status["position"] > 0.0005: # current long position
+            if open_price < max([lo_price, self.profit_line]):
+                if open_price<lo_price:
+                    self.curr_dealedprice = self.execute_trade("sell", self.each_size * 2)
+                    self.waitfor_position_match(orig_pos, -self.each_size * 2)
+                    self.profit_line=0.0
+                else:
+                    self.curr_dealedprice = self.execute_trade("sell", self.each_size * 1)
+                    self.waitfor_position_match(orig_pos, -self.each_size * 1)
+                    self.profit_line = 0.0
+                self.execute_slide_computation(dealed_price=self.curr_dealedprice,
+                                               order_price=open_price,
+                                               type="sell")
+            elif open_price - self.curr_dealedprice > target_diff[0]:
+                self.profit_line = self.curr_dealedprice + target_diff[0] - buffer
+            elif open_price - self.curr_dealedprice > target_diff[1]:
+                self.profit_line = self.curr_dealedprice + target_diff[1] - buffer
+            elif open_price - self.curr_dealedprice > target_diff[2]:
+                self.profit_line = self.curr_dealedprice + target_diff[2] - buffer
+            elif open_price - self.curr_dealedprice > target_diff[3]:
+                self.profit_line = self.curr_dealedprice + target_diff[3] - buffer
+            elif open_price - self.curr_dealedprice > target_diff[4]:
+                self.profit_line = self.curr_dealedprice + target_diff[4] - buffer
+            else:
+                pass
+        elif self.my_status["position"] < -0.0005: # current short position
+            if open_price > min([hi_price, self.profit_line]):
+                if open_price>hi_price:
+                    self.curr_dealedprice = self.execute_trade("buy", self.each_size * 2)
+                    self.waitfor_position_match(orig_pos, self.each_size * 2)
+                    self.profit_line = 0.0
+                else:
+                    self.curr_dealedprice = self.execute_trade("buy", self.each_size * 1)
+                    self.waitfor_position_match(orig_pos, self.each_size * 1)
+                    self.profit_line = 0.0
+                self.execute_slide_computation(dealed_price=self.curr_dealedprice,
+                                               order_price=open_price,
+                                               type="buy")
+            elif self.curr_dealedprice-open_price > target_diff[0]:
+                self.profit_line = self.curr_dealedprice - target_diff[0] + buffer
+            elif self.curr_dealedprice-open_price > target_diff[1]:
+                self.profit_line = self.curr_dealedprice - target_diff[1] + buffer
+            elif self.curr_dealedprice-open_price > target_diff[2]:
+                self.profit_line = self.curr_dealedprice - target_diff[2] + buffer
+            elif self.curr_dealedprice-open_price > target_diff[3]:
+                self.profit_line = self.curr_dealedprice - target_diff[3] + buffer
+            elif self.curr_dealedprice-open_price > target_diff[4]:
+                self.profit_line = self.curr_dealedprice - target_diff[4] + buffer
+            else:
+                pass
+        elif abs(self.my_status["position"]) < 0.0005: #"Null"
+            if self.get_last_open()<hi_price and open_price>hi_price:
+                self.curr_dealedprice = self.execute_trade("buy", self.each_size * 1)
+                self.waitfor_position_match(orig_pos, self.each_size * 1)
+                self.execute_slide_computation(dealed_price=self.curr_dealedprice,
+                                               order_price=open_price,
+                                               type="buy")
 
+            elif self.get_last_open()>lo_price and open_price<lo_price:
+                self.curr_dealedprice = self.execute_trade("sell", self.each_size * 1)
+                self.waitfor_position_match(orig_pos, -self.each_size * 1)
+                self.execute_slide_computation(dealed_price=self.curr_dealedprice,
+                                               order_price=open_price,
+                                               type="sell")
 
+            else:
+                pass
+
+    def candle_beginning_process(self, next_min):
+        if time.time() > next_min:
+            print("")
+            print("candle_beginning_process")
+            hilo_price = self.get_hilo_price(num=100, periods="1m")
+            open_price = self.get_last_close()
+            self.hilo_watcher(hilo_price, open_price)
+            return True
+
+        return False
 
     def hilo_run_1min(self):
-
         print("hilo_run starts")
         while True:
             NEXT_MIN = self.get_next_min()
-
             print(time.strftime('%Y/%m/%d,%H:%M:%S'))
 
-            # within-hour main loop
+            # within-min main loop
             while True:
-                if time.time()>NEXT_MIN:
-                    hilo_price = self.get_hilo_price(num=100, periods="1m")
+                print("time:%s  current_price: %s" % (time.strftime('%Y/%m/%d,%H:%M:%S'), self.get_current_price()),
+                      end="\r")
+                if self.candle_beginning_process(NEXT_MIN):
+                    break
+                time.sleep(0.5)
+
 
 
 if __name__ == '__main__':
     hilo = Hilo()
-    #    print(tenlines.get_current_price())
-    # hilo.hilo_run()
-    # tenlines.update_position()
+
+    hilo.hilo_run_1min()
 

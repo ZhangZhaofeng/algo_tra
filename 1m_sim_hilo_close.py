@@ -28,11 +28,11 @@ class HILO:
         return x.T
 
     def get_HIGH_MA(self, HIGH):  # price=1*N (N>61)
-        ma_high=self.MA(HIGH,16)
+        ma_high=self.MA(HIGH,7)
         return ma_high
 
     def get_LOW_MA(self, LOW):  # price=1*N (N>61)
-        ma_low=self.MA(LOW,16)
+        ma_low=self.MA(LOW,8)
         return ma_low
 
     def get_long_price(self, HIGH):
@@ -60,11 +60,16 @@ class HILO:
                 #2: only short;
 
         target_diff = 2000
-        target_diff2 = 3000
-        target_diff3 = 4000
-        target_diff4 = 5000
-        target_diff5 = 6000
-        buffer=500
+        target_diff2 = 4000
+        target_diff3 = 6000
+        target_diff4 = 8000
+        target_diff5 = 10000
+        target_diff6 = 12000
+        target_diff7 = 14000
+        target_diff8 = 16000
+        target_diff9 = 18000
+        target_diff10 = 20000
+        buffer=700
         temp_line= 0
 
 
@@ -116,15 +121,15 @@ class HILO:
                 elif all[t][4] > buy_price and all[t][1] < buy_price: # high price is higher than buy_price
                     # long starts
                     long = True
-                    long_start_price = buy_price
+                    long_start_price = all[t][4]
                     trading_cash = cash
                     long_times += 1
                     amount[t][5] = 888
                     cash = 0.
 
             elif short and not long:
-                # if all[t][1]>buy_price:
-                #     buy_price=all[t][1]-30
+                if all[t][1]>buy_price:
+                    buy_price=all[t][1]-30
 
                 if all[t][4] > buy_price:  # close price is higher than reverse_price
                     # short over
@@ -152,8 +157,16 @@ class HILO:
                     temp_line = short_start_price - target_diff3 + buffer
                 elif short_start_price-all[t][4]>target_diff4:
                     temp_line = short_start_price - target_diff4 + buffer
-                elif short_start_price-all[t][4]>target_diff5:
-                    temp_line = short_start_price - target_diff5 + buffer
+                elif short_start_price-all[t][4]>target_diff6:
+                    temp_line = short_start_price - target_diff6 + buffer
+                elif short_start_price-all[t][4]>target_diff7:
+                    temp_line = short_start_price - target_diff7 + buffer
+                elif short_start_price-all[t][4]>target_diff8:
+                    temp_line = short_start_price - target_diff8 + buffer
+                elif short_start_price-all[t][4]>target_diff9:
+                    temp_line = short_start_price - target_diff9 + buffer
+                elif short_start_price-all[t][4]>target_diff10:
+                    temp_line = short_start_price - target_diff10 + buffer
                 elif all[t][4] >temp_line and temp_line >0:
                     # short over
                     short = False
@@ -168,8 +181,8 @@ class HILO:
 
 
             elif not short and long:
-                # if all[t][1]<sell_price:
-                #     sell_price=all[t][1]+30
+                if all[t][1]<sell_price:
+                    sell_price=all[t][1]+30
 
                 if all[t][4] < sell_price:  # close price is lower than reverse_price
                     #long over
@@ -199,6 +212,16 @@ class HILO:
                     temp_line = long_start_price+target_diff4-buffer
                 elif long_start_price-all[t][4]>target_diff5:
                     temp_line = long_start_price+target_diff5-buffer
+                elif long_start_price-all[t][4]>target_diff6:
+                    temp_line = long_start_price+target_diff6-buffer
+                elif long_start_price-all[t][4]>target_diff7:
+                    temp_line = long_start_price+target_diff7-buffer
+                elif long_start_price-all[t][4]>target_diff8:
+                    temp_line = long_start_price+target_diff8-buffer
+                elif long_start_price-all[t][4]>target_diff9:
+                    temp_line = long_start_price+target_diff9-buffer
+                elif long_start_price-all[t][4]>target_diff10:
+                    temp_line = long_start_price+target_diff10-buffer
                 elif all[t][4]<temp_line and temp_line>0:
                     long = False
                     long_over_price = all[t][4]
@@ -260,18 +283,12 @@ if __name__ == '__main__':
 
     (time_stamp, open_price, high_price, low_price, close_price) = btc_charts.get_price_array_till_finaltime()
 
-    # print(close_price)
-
-    # gmma = GMMA()
-    # # simulate the past 24 hours
-    # gmma.simulate(num=24 * 7 * 1 + 61, periods="1H", end_offset=3600 * 24 * 7 * 0)
-
     hilo = HILO()
 
 
     sum = 0.
     counter_sum= 0
-    length = 7
+    length = 4
     for i in range(length):
         value,counter = hilo.simulate(num=60*24*1 + 50, periods="1m", end_offset=3600 * 24 * (i + 0))
         sum = sum + value

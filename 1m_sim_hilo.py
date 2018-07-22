@@ -104,19 +104,19 @@ class HILO:
 
 
             if not short and not long:
-                if all[t][4] < sell_price and all[t][1] > sell_price:   #low price is lower than sell_price
+                if all[t][3] < sell_price-1000 and all[t][1] > sell_price:   #low price is lower than sell_price
                     #short starts
                     short = True
-                    short_start_price = all[t][4]
+                    short_start_price = sell_price-1000
                     trading_cash = cash
                     short_times += 1
                     amount[t][6] = 555
                     cash=0.
 
-                elif all[t][4] > buy_price and all[t][1] < buy_price: # high price is higher than buy_price
+                elif all[t][2] > buy_price+1000 and all[t][1] < buy_price: # high price is higher than buy_price
                     # long starts
                     long = True
-                    long_start_price = buy_price
+                    long_start_price = buy_price+1000
                     trading_cash = cash
                     long_times += 1
                     amount[t][5] = 888
@@ -126,10 +126,10 @@ class HILO:
                 if all[t][1]>buy_price:
                     buy_price=all[t][1]-30
 
-                if all[t][2] > buy_price:  # close price is higher than reverse_price
+                if all[t][2] > buy_price+1000:  # close price is higher than reverse_price
                     # short over
                     short = False
-                    short_over_price=buy_price
+                    short_over_price=buy_price+1000
                     cash = (1+(short_start_price-short_over_price)/short_start_price)*trading_cash
                     if cash<0:
                         cash==0
@@ -139,7 +139,7 @@ class HILO:
 
                     # long starts
                     long = True
-                    long_start_price = buy_price
+                    long_start_price = buy_price+1000
                     trading_cash = cash
                     cash = 0.
                     long_times += 1
@@ -171,10 +171,10 @@ class HILO:
                 if all[t][1]<sell_price:
                     sell_price=all[t][1]+30
 
-                if all[t][3] < sell_price:  # close price is lower than reverse_price
+                if all[t][3] < sell_price-1000:  # close price is lower than reverse_price
                     #long over
                     long = False
-                    long_over_price=sell_price
+                    long_over_price=sell_price-1000
                     cash = (1 - (long_start_price - long_over_price) / long_start_price) * trading_cash
                     if cash < 0:
                         cash == 0
@@ -184,7 +184,7 @@ class HILO:
 
                     # short starts
                     short = True
-                    short_start_price = sell_price
+                    short_start_price = sell_price-1000
                     trading_cash = cash
                     cash=0.
                     short_times += 1
