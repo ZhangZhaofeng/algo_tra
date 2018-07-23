@@ -32,7 +32,7 @@ class HILO:
         return ma_high
 
     def get_LOW_MA(self, LOW):  # price=1*N (N>61)
-        ma_low=self.MA(LOW,8)
+        ma_low=self.MA(LOW,7)
         return ma_low
 
     def get_long_price(self, HIGH):
@@ -59,18 +59,18 @@ class HILO:
                 #1: only long;
                 #2: only short;
 
-        target_diff = 2000
-        target_diff2 = 4000
-        target_diff3 = 6000
-        target_diff4 = 8000
-        target_diff5 = 10000
-        target_diff6 = 12000
-        target_diff7 = 14000
-        target_diff8 = 16000
-        target_diff9 = 18000
-        target_diff10 = 20000
-        buffer=700
-        temp_line= 0
+        target_diff = 1000
+        target_diff2 = 2000
+        target_diff3 = 3000
+        target_diff4 = 4000
+        target_diff5 = 5000
+        target_diff6 = 6000
+        target_diff7 = 7000
+        target_diff8 = 8000
+        target_diff9 = 9000
+        buffer=500
+        profit_hi=9990000.
+        profit_lo=0.
 
 
         leverage = 1.0
@@ -101,6 +101,11 @@ class HILO:
         short_start_price= 0.
         long_start_price = 0.
         trade_back=0
+        overshoot=0
+        trigger_diff=400
+        slide=100
+
+        flag=0
         for t in range(50, len(all)):
             # (gradient_real, grad_w_real)=self.get_current_GMMA_gradient_realtime(ema[t-1], all[t][2], periods)
             #current hour's operation price initialization
@@ -112,7 +117,7 @@ class HILO:
                 if all[t][4] < sell_price and all[t][1] > sell_price:   #low price is lower than sell_price
                     #short starts
                     short = True
-                    short_start_price = all[t][4]
+                    short_start_price = all[t][4]  if abs(max([sell_price,profit_lo])-all[t][4] )<trigger_diff else max([sell_price,profit_lo])-trigger_diff
                     trading_cash = cash
                     short_times += 1
                     amount[t][6] = 555
@@ -121,53 +126,176 @@ class HILO:
                 elif all[t][4] > buy_price and all[t][1] < buy_price: # high price is higher than buy_price
                     # long starts
                     long = True
-                    long_start_price = all[t][4]
+                    long_start_price = all[t][4] if abs(all[t][4]-min([buy_price,profit_hi]))<trigger_diff else min([buy_price,profit_hi])+trigger_diff
                     trading_cash = cash
                     long_times += 1
                     amount[t][5] = 888
                     cash = 0.
 
             elif short and not long:
-                if all[t][1]>buy_price:
-                    buy_price=all[t][1]-30
+                # if all[t][1]>buy_price:
+                #     buy_price=all[t][1]-30
 
-                if all[t][4] > buy_price:  # close price is higher than reverse_price
+                if short_start_price-all[t][3]>target_diff and flag==0:
+                    profit_hi = short_start_price - target_diff + buffer
+                    flag = 1
+                elif short_start_price-all[t][3]>target_diff2 and flag==1:
+                    profit_hi = short_start_price - target_diff2 + buffer
+                    flag = 2
+                elif short_start_price-all[t][3]>target_diff3 and flag==2:
+                    profit_hi = short_start_price - target_diff3 + buffer
+                    flag = 3
+                elif short_start_price-all[t][3]>target_diff4 and flag==3:
+                    profit_hi = short_start_price - target_diff4 + buffer
+                    flag = 4
+                elif short_start_price-all[t][3]>target_diff5 and flag==4:
+                    profit_hi = short_start_price - target_diff5 + buffer
+                    flag = 5
+                elif short_start_price-all[t][3]>target_diff6 and flag==5:
+                    profit_hi = short_start_price - target_diff6 + buffer
+                    flag = 6
+                elif short_start_price-all[t][3]>target_diff7 and flag==6:
+                    profit_hi = short_start_price - target_diff7 + buffer
+                    flag = 7
+                elif short_start_price-all[t][3]>target_diff8 and flag==7:
+                    profit_hi = short_start_price - target_diff8 + buffer
+                    flag = 8
+                elif short_start_price-all[t][3]>target_diff9 and flag==8:
+                    profit_hi = short_start_price - target_diff9 + buffer
+                    flag = 9
+
+                if all[t][4] > min([buy_price,profit_hi]):  # close price is higher than reverse_price
                     # short over
                     short = False
-                    short_over_price=all[t][4]
+                    short_over_price=all[t][4] if abs(all[t][4]-min([buy_price,profit_hi]))<trigger_diff else min([buy_price,profit_hi])+trigger_diff
                     cash = (1+(short_start_price-short_over_price)/short_start_price)*trading_cash
                     if cash<0:
                         cash==0
                     short_start_price = 0.
                     trading_cash = 0.
-                    amount[t][5] = 888
+                    amount[t][5] = 444
+                    flag=0
+                    profit_hi=9990000.
+
+                    if all[t][4]>buy_price:
+                        # long starts
+                        long = True
+                        long_start_price = short_over_price
+                        trading_cash = cash
+                        cash = 0.
+                        long_times += 1
+                        amount[t][5] = 888
+                        overshoot =all[t][4]-buy_price
+                        print("overshoot=%s" %overshoot)
+                elif all[t][2]-buy_price > trigger_diff:
+                    trade_back+=1
+
+                    # short over
+                    short = False
+                    short_over_price = buy_price+trigger_diff
+                    cash = (1 + (short_start_price - short_over_price) / short_start_price) * trading_cash
+                    if cash < 0:
+                        cash == 0
+                    short_start_price = 0.
+                    trading_cash = 0.
 
                     # long starts
                     long = True
-                    long_start_price = all[t][4]
+                    long_start_price = short_over_price
                     trading_cash = cash
                     cash = 0.
-                    long_times += 1
-                    amount[t][5] = 888
-                elif short_start_price-all[t][4]>target_diff and temp_line==0:
-                    temp_line = short_start_price - target_diff + buffer
-                elif short_start_price-all[t][4]>target_diff2:
-                    temp_line = short_start_price - target_diff2 + buffer
-                elif short_start_price-all[t][4]>target_diff3:
-                    temp_line = short_start_price - target_diff3 + buffer
-                elif short_start_price-all[t][4]>target_diff4:
-                    temp_line = short_start_price - target_diff4 + buffer
-                elif short_start_price-all[t][4]>target_diff6:
-                    temp_line = short_start_price - target_diff6 + buffer
-                elif short_start_price-all[t][4]>target_diff7:
-                    temp_line = short_start_price - target_diff7 + buffer
-                elif short_start_price-all[t][4]>target_diff8:
-                    temp_line = short_start_price - target_diff8 + buffer
-                elif short_start_price-all[t][4]>target_diff9:
-                    temp_line = short_start_price - target_diff9 + buffer
-                elif short_start_price-all[t][4]>target_diff10:
-                    temp_line = short_start_price - target_diff10 + buffer
-                elif all[t][4] >temp_line and temp_line >0:
+
+                    # long over
+                    long = False
+                    long_over_price = all[t][4]
+                    cash = (1 - (long_start_price - long_over_price) / long_start_price) * trading_cash
+                    if cash < 0:
+                        cash == 0
+                    long_start_price = 0.
+                    trading_cash = 0.
+
+                    # short starts
+                    short = True
+                    short_start_price = long_over_price
+                    trading_cash = cash
+                    cash=0.
+                    amount[t][6] = 333
+
+
+            elif not short and long:
+                # if all[t][1]<sell_price:
+                #     sell_price=all[t][1]+30
+
+                if all[t][2]-long_start_price>target_diff and flag==0:
+                    profit_lo=long_start_price+target_diff-buffer
+                    flag = 1
+                elif all[t][2]-long_start_price>target_diff2 and flag==1:
+                    profit_lo = long_start_price+target_diff2-buffer
+                    flag = 2
+                elif all[t][2]-long_start_price>target_diff3 and flag==2:
+                    profit_lo = long_start_price+target_diff3-buffer
+                    flag = 3
+                elif all[t][2]-long_start_price>target_diff4 and flag==3:
+                    profit_lo = long_start_price+target_diff4-buffer
+                    flag = 4
+                elif all[t][2]-long_start_price>target_diff5 and flag==4:
+                    profit_lo = long_start_price+target_diff5-buffer
+                    flag = 5
+                elif all[t][2]-long_start_price>target_diff6 and flag==5:
+                    profit_lo = long_start_price+target_diff6-buffer
+                    flag = 6
+                elif all[t][2]-long_start_price>target_diff7 and flag==6:
+                    profit_lo = long_start_price+target_diff7-buffer
+                    flag = 7
+                elif all[t][2]-long_start_price>target_diff8 and flag==7:
+                    profit_lo = long_start_price+target_diff8-buffer
+                    flag = 8
+                elif all[t][2]-long_start_price>target_diff9 and flag==8:
+                    profit_lo = long_start_price+target_diff9-buffer
+                    flag = 9
+
+                if all[t][4] < max([sell_price,profit_lo]):  # close price is lower than reverse_price
+                    #long over
+                    long = False
+                    long_over_price=all[t][4]  if abs(max([sell_price,profit_lo])-all[t][4] )<trigger_diff else max([sell_price,profit_lo])-trigger_diff
+                    cash = (1 - (long_start_price - long_over_price) / long_start_price) * trading_cash
+                    if cash < 0:
+                        cash == 0
+                    long_start_price = 0.
+                    trading_cash = 0.
+                    amount[t][6] = 444
+                    profit_lo=0.
+                    flag=0
+
+                    if all[t][4] < sell_price:
+                        # short starts
+                        short = True
+                        short_start_price = long_over_price
+                        trading_cash = cash
+                        cash=0.
+                        short_times += 1
+                        amount[t][6] = 555
+                        overshoot = sell_price-all[t][4]
+                        print("overshoot=%s" % overshoot)
+                elif sell_price- all[t][3] > trigger_diff:
+                    trade_back+=1
+
+                    # long over
+                    long = False
+                    long_over_price = sell_price-trigger_diff
+                    cash = (1 - (long_start_price - long_over_price) / long_start_price) * trading_cash
+                    if cash < 0:
+                        cash == 0
+                    long_start_price = 0.
+                    trading_cash = 0.
+
+                    # short starts
+                    short = True
+                    short_start_price = long_over_price
+                    trading_cash = cash
+                    cash = 0.
+                    short_times += 1
+
                     # short over
                     short = False
                     short_over_price = all[t][4]
@@ -176,62 +304,13 @@ class HILO:
                         cash == 0
                     short_start_price = 0.
                     trading_cash = 0.
-                    amount[t][5] = 444
-                    temp_line=0
 
-
-            elif not short and long:
-                if all[t][1]<sell_price:
-                    sell_price=all[t][1]+30
-
-                if all[t][4] < sell_price:  # close price is lower than reverse_price
-                    #long over
-                    long = False
-                    long_over_price=all[t][4]
-                    cash = (1 - (long_start_price - long_over_price) / long_start_price) * trading_cash
-                    if cash < 0:
-                        cash == 0
-                    long_start_price = 0.
-                    trading_cash = 0.
-                    amount[t][6] = 555
-
-                    # short starts
-                    short = True
-                    short_start_price = all[t][4]
+                    # long starts
+                    long = True
+                    long_start_price = short_over_price
                     trading_cash = cash
-                    cash=0.
-                    short_times += 1
-                    amount[t][6] = 555
-                elif all[t][4]-long_start_price>target_diff and temp_line==0:
-                    temp_line=long_start_price+target_diff-buffer
-                elif long_start_price-all[t][4]>target_diff2:
-                    temp_line = long_start_price+target_diff2-buffer
-                elif long_start_price-all[t][4]>target_diff3:
-                    temp_line = long_start_price+target_diff3-buffer
-                elif long_start_price-all[t][4]>target_diff4:
-                    temp_line = long_start_price+target_diff4-buffer
-                elif long_start_price-all[t][4]>target_diff5:
-                    temp_line = long_start_price+target_diff5-buffer
-                elif long_start_price-all[t][4]>target_diff6:
-                    temp_line = long_start_price+target_diff6-buffer
-                elif long_start_price-all[t][4]>target_diff7:
-                    temp_line = long_start_price+target_diff7-buffer
-                elif long_start_price-all[t][4]>target_diff8:
-                    temp_line = long_start_price+target_diff8-buffer
-                elif long_start_price-all[t][4]>target_diff9:
-                    temp_line = long_start_price+target_diff9-buffer
-                elif long_start_price-all[t][4]>target_diff10:
-                    temp_line = long_start_price+target_diff10-buffer
-                elif all[t][4]<temp_line and temp_line>0:
-                    long = False
-                    long_over_price = all[t][4]
-                    cash = (1 - (long_start_price - long_over_price) / long_start_price) * trading_cash
-                    if cash < 0:
-                        cash == 0
-                    long_start_price = 0.
-                    trading_cash = 0.
-                    amount[t][6] = 444
-                    temp_line=0
+                    cash = 0.
+                    amount[t][5] = 333
 
 
             #result log
