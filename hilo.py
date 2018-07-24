@@ -326,28 +326,35 @@ class Hilo:
             else:
                 pass
 
-    def candle_beginning_process(self, next_min):
+    def candle_finish_process(self, next_min):
         if time.time() > next_min:
             print("")
-            print("candle_beginning_process")
-            hilo_price = self.get_hilo_price(num=100, periods="1m")
-            open_price = self.get_last_close()
-            self.hilo_watcher(hilo_price, open_price)
+            print("candle_finish_process")
+            #do here
             return True
 
         return False
+
+    def candle_within_process(self, current_price):
+        hilo_price = self.get_hilo_price(num=100, periods="1m")
+        open_price = self.get_last_close()
+        self.hilo_watcher(hilo_price, current_price)
 
     def hilo_run_1min(self):
         print("hilo_run starts")
         while True:
             NEXT_MIN = self.get_next_min()
+            print("############################################")
             print(time.strftime('%Y/%m/%d,%H:%M:%S'))
+            print("############################################")
 
             # within-min main loop
             while True:
                 print("time:%s  current_price: %s" % (time.strftime('%Y/%m/%d,%H:%M:%S'), self.get_current_price()),
                       end="\r")
-                if self.candle_beginning_process(NEXT_MIN):
+
+                self.candle_within_process()
+                if self.candle_finish_process(NEXT_MIN):
                     break
                 time.sleep(0.5)
 
