@@ -38,6 +38,8 @@ class Hilo:
         self.last_open = 0.0
         self.last_close=0.0
 
+        self.within_min_process=False
+
         self.update_mystatus_pos()
 
     def trade_bitflyer_fx(self, type, amount=0.01):
@@ -236,18 +238,34 @@ class Hilo:
         print("slide=%s" % slide)
         return slide
 
-    def hilo_watcher(self, hilo_price, open_price):
-        self.update_mystatus_pos()
+    def mdfy_position(self,hilo, close_price):
+        (hi_price,lo_price)=hilo
         orig_pos = self.my_status["position"]
-        target_diff = [2000, 4000, 6000, 8000, 10000]
-        buffer = 700
+        if self.my_status["position"] > 0.0005:  # current long position
+            if close_price<hi_price:
+                self.curr_dealedprice = self.execute_trade("sell", self.each_size * 2)
+                self.waitfor_position_match(orig_pos, -self.each_size * 2)
+                print("Fake long -> short")
+
+        elif self.my_status["position"] < -0.0005:  # current long position
+            if close_price>lo_price:
+                self.curr_dealedprice = self.execute_trade("buy", self.each_size * 2)
+                self.waitfor_position_match(orig_pos, self.each_size * 2)
+                print("Fake short -> long")
+
+    def hilo_watcher(self, hilo_price, current_price,overshoot=250):
+        orig_pos = self.my_status["position"]
+        target_diff = [1500, 2500, 3500, 4500, 5500]
+        buffer = 500
         self.flag=0
         (hi_price, lo_price) = hilo_price
-        print("open%s" % open_price)
+        # print("open=%s" % current_price)
         if self.my_status["position"] > 0.0005: # current long position
-            print("lo= %s profit_hi=%s" % (lo_price,self.profit_hi))
-            if open_price < max([lo_price, self.profit_hi]):
-                if open_price<lo_price:
+            print("##### time:%s current_price:%s lo= %s profit_hi= %s" % (time.strftime('%Y/%m/%d,%H:%M:%S'),
+                                                                           current_price, lo_price, self.profit_hi),
+                  end="\r")
+            if current_price < max([lo_price, self.profit_hi])-overshoot:
+                if current_price<lo_price-overshoot:
                     self.curr_dealedprice = self.execute_trade("sell", self.each_size * 2)
                     self.waitfor_position_match(orig_pos, -self.each_size * 2)
                 else:
@@ -255,31 +273,34 @@ class Hilo:
                     self.waitfor_position_match(orig_pos, -self.each_size * 1)
 
                 self.execute_slide_computation(dealed_price=self.curr_dealedprice,
-                                               order_price=open_price,
+                                               order_price=current_price,
                                                type="sell")
                 self.profit_hi = 0.0
                 self.flag = 0
-            elif open_price - self.curr_dealedprice > target_diff[0] and self.flag==0:
+                return True
+            elif current_price - self.curr_dealedprice > target_diff[0] and self.flag==0:
                 self.profit_hi = self.curr_dealedprice + target_diff[0] - buffer
                 self.flag=1
-            elif open_price - self.curr_dealedprice > target_diff[1] and self.flag==1:
+            elif current_price - self.curr_dealedprice > target_diff[1] and self.flag==1:
                 self.profit_hi = self.curr_dealedprice + target_diff[1] - buffer
                 self.flag=2
-            elif open_price - self.curr_dealedprice > target_diff[2] and self.flag==2:
+            elif current_price - self.curr_dealedprice > target_diff[2] and self.flag==2:
                 self.profit_hi = self.curr_dealedprice + target_diff[2] - buffer
                 self.flag =3
-            elif open_price - self.curr_dealedprice > target_diff[3] and self.flag==3:
+            elif current_price - self.curr_dealedprice > target_diff[3] and self.flag==3:
                 self.profit_hi = self.curr_dealedprice + target_diff[3] - buffer
                 self.flag = 4
-            elif open_price - self.curr_dealedprice > target_diff[4] and self.flag==4:
+            elif current_price - self.curr_dealedprice > target_diff[4] and self.flag==4:
                 self.profit_hi = self.curr_dealedprice + target_diff[4] - buffer
                 self.flag = 5
             else:
                 pass
         elif self.my_status["position"] < -0.0005: # current short position
-            print("hi= %s profit_lo=%s" % (hi_price,self.profit_lo))
-            if open_price > min([hi_price, self.profit_lo]):
-                if open_price>hi_price:
+            print("##### time:%s current_price:%s hi= %s profit_lo=%s" % (time.strftime('%Y/%m/%d,%H:%M:%S'),
+                                                                           current_price, hi_price,self.profit_lo),
+                  end="\r")
+            if current_price > min([hi_price, self.profit_lo])+overshoot:
+                if current_price>hi_price+overshoot:
                     self.curr_dealedprice = self.execute_trade("buy", self.each_size * 2)
                     self.waitfor_position_match(orig_pos, self.each_size * 2)
 
@@ -287,74 +308,86 @@ class Hilo:
                     self.curr_dealedprice = self.execute_trade("buy", self.each_size * 1)
                     self.waitfor_position_match(orig_pos, self.each_size * 1)
                 self.execute_slide_computation(dealed_price=self.curr_dealedprice,
-                                               order_price=open_price,
+                                               order_price=current_price,
                                                type="buy")
                 self.profit_lo = 9990000
                 self.flag = 0
-            elif self.curr_dealedprice-open_price > target_diff[0] and self.flag==0:
+                return True
+            elif self.curr_dealedprice-current_price > target_diff[0] and self.flag==0:
                 self.profit_lo = self.curr_dealedprice - target_diff[0] + buffer
                 self.flag = 1
-            elif self.curr_dealedprice-open_price > target_diff[1] and self.flag==1:
+            elif self.curr_dealedprice-current_price > target_diff[1] and self.flag==1:
                 self.profit_lo = self.curr_dealedprice - target_diff[1] + buffer
                 self.flag = 2
-            elif self.curr_dealedprice-open_price > target_diff[2] and self.flag==2:
+            elif self.curr_dealedprice-current_price > target_diff[2] and self.flag==2:
                 self.profit_lo = self.curr_dealedprice - target_diff[2] + buffer
                 self.flag = 3
-            elif self.curr_dealedprice-open_price > target_diff[3] and self.flag==3:
+            elif self.curr_dealedprice-current_price > target_diff[3] and self.flag==3:
                 self.profit_lo = self.curr_dealedprice - target_diff[3] + buffer
                 self.flag = 4
-            elif self.curr_dealedprice-open_price > target_diff[4] and self.flag==4:
+            elif self.curr_dealedprice-current_price > target_diff[4] and self.flag==4:
                 self.profit_lo = self.curr_dealedprice - target_diff[4] + buffer
                 self.flag = 5
             else:
                 pass
         elif abs(self.my_status["position"]) < 0.0005: #"Null"
-            if self.get_last_open()<hi_price and open_price>hi_price:
+            if self.get_last_open()<hi_price and current_price>hi_price+overshoot:
                 self.curr_dealedprice = self.execute_trade("buy", self.each_size * 1)
                 self.waitfor_position_match(orig_pos, self.each_size * 1)
                 self.execute_slide_computation(dealed_price=self.curr_dealedprice,
-                                               order_price=open_price,
+                                               order_price=current_price,
                                                type="buy")
+                return True
 
-            elif self.get_last_open()>lo_price and open_price<lo_price:
+            elif self.get_last_open()>lo_price and current_price<lo_price-overshoot:
                 self.curr_dealedprice = self.execute_trade("sell", self.each_size * 1)
                 self.waitfor_position_match(orig_pos, -self.each_size * 1)
                 self.execute_slide_computation(dealed_price=self.curr_dealedprice,
-                                               order_price=open_price,
+                                               order_price=current_price,
                                                type="sell")
+                return True
 
             else:
                 pass
 
-    def candle_finish_process(self, next_min):
-        if time.time() > next_min:
-            print("")
-            print("candle_finish_process")
-            #do here
-            return True
-
         return False
 
-    def candle_within_process(self, current_price):
-        hilo_price = self.get_hilo_price(num=100, periods="1m")
-        open_price = self.get_last_close()
+    def candle_finish_process(self,hilo_price, close_price):
+        print("candle_finish_process")
+
+        if not self.within_min_process:
+            self.hilo_watcher(hilo_price,close_price,overshoot=0.)
+        else:
+            self.mdfy_position(hilo_price,close_price)
+
+        self.update_mystatus_pos()
+
+
+    def candle_within_process(self, hilo_price, current_price):
         self.hilo_watcher(hilo_price, current_price)
 
     def hilo_run_1min(self):
         print("hilo_run starts")
+        hilo_price = self.get_hilo_price(num=100, periods="1m")
         while True:
             NEXT_MIN = self.get_next_min()
             print("############################################")
             print(time.strftime('%Y/%m/%d,%H:%M:%S'))
             print("############################################")
+            self.within_min_process=False
 
             # within-min main loop
             while True:
-                print("time:%s  current_price: %s" % (time.strftime('%Y/%m/%d,%H:%M:%S'), self.get_current_price()),
+                current_price=self.get_current_price()
+                print("time:%s  current_price: %s" % (time.strftime('%Y/%m/%d,%H:%M:%S'), current_price),
                       end="\r")
+                if not self.within_min_process:
+                    self.within_min_process=self.candle_within_process(hilo_price, current_price) #buy/sell at most once in one candle
 
-                self.candle_within_process()
-                if self.candle_finish_process(NEXT_MIN):
+                if time.time() > NEXT_MIN:
+                    hilo_price = self.get_hilo_price(num=100, periods="1m")
+                    close_price = self.get_last_close()
+                    self.candle_finish_process(hilo_price, close_price)
                     break
                 time.sleep(0.5)
 
