@@ -384,7 +384,7 @@ class Hilo:
             self.within_min_process = False
 
             if self.get_kairi()>4.9 and abs(self.my_status["position"])<0.0005:
-                self.go=False
+                self.Go=False
 
             # within-min main loop
             while self.Go:
