@@ -138,7 +138,7 @@ class Hilo:
 
     # can be called at any time within current min
     def get_next_min(self):
-        next_min = dt.datetime.fromtimestamp(time.time() - time.time() % 60 + 62)
+        next_min = dt.datetime.fromtimestamp(time.time() - time.time() % 60 + 60)
         return next_min.timestamp()
 
     def update_colleral(self):
@@ -254,8 +254,8 @@ class Hilo:
 
     def hilo_watcher(self, hilo_price, current_price, overshoot=250):
         orig_pos = self.my_status["position"]
-        target_diff = [1500, 2500, 3500, 4500, 5500]
-        buffer = 500
+        target_diff = [3500, 4500, 5500, 6500, 7500]
+        buffer = 700
         self.flag = 0
         (hi_price, lo_price) = hilo_price
         # print("open=%s" % current_price)
