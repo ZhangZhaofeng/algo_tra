@@ -389,10 +389,10 @@ class Hilo:
 if __name__ == '__main__':
     hilo = Hilo()
 
-    # hilo.hilo_run_1min()
+    hilo.hilo_run_1min()
     
-    (bid,ask)=hilo.get_current_bid_ask()
-    print([bid,ask])
+    #(bid,ask)=hilo.get_current_bid_ask()
+    #print([bid,ask])
     
     
 
