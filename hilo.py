@@ -398,6 +398,7 @@ class Hilo:
                     self.candle_finish_process(hilo_price, close_price)
                     break
                 time.sleep(0.5)
+            time.sleep(0.5)
 
     def hilo_run_15min(self):
         print("hilo_run 15min starts")
