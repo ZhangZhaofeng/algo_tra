@@ -112,7 +112,7 @@ class Hilo:
 
         return (round(bid, 0), round(ask, 0))
 
-    def get_current_price(self, num=100):
+    def get_current_price(self, num=3):
         trade_history = []
         while True:
             try:
