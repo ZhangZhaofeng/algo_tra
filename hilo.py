@@ -260,9 +260,7 @@ class Hilo:
         (hi_price, lo_price) = hilo_price
         # print("open=%s" % current_price)
         if self.my_status["position"] > 0.0005:  # current long position
-            print("##### time:%s current_price:%s lo= %s profit_hi= %s" % (time.strftime('%Y/%m/%d,%H:%M:%S'),
-                                                                           current_price, lo_price, self.profit_hi),
-                  end="\r")
+            print("##### time:%s current_price:%s lo= %s profit_hi= %s" % (time.strftime('%Y/%m/%d,%H:%M:%S'),current_price, lo_price, self.profit_hi),end="\r")
             if current_price < max([lo_price, self.profit_hi]) - overshoot:
                 if current_price < lo_price - overshoot:
                     self.curr_dealedprice = self.execute_trade("sell", self.each_size * 2)
@@ -295,9 +293,7 @@ class Hilo:
             else:
                 pass
         elif self.my_status["position"] < -0.0005:  # current short position
-            print("##### time:%s current_price:%s hi= %s profit_lo=%s" % (time.strftime('%Y/%m/%d,%H:%M:%S'),
-                                                                          current_price, hi_price, self.profit_lo),
-                  end="\r")
+            print("##### time:%s current_price:%s hi= %s profit_lo=%s" % (time.strftime('%Y/%m/%d,%H:%M:%S'),current_price, hi_price, self.profit_lo),end="\r")
             if current_price > min([hi_price, self.profit_lo]) + overshoot:
                 if current_price > hi_price + overshoot:
                     self.curr_dealedprice = self.execute_trade("buy", self.each_size * 2)
@@ -330,8 +326,7 @@ class Hilo:
             else:
                 pass
         elif abs(self.my_status["position"]) < 0.0005:  # "Null"
-            print("time:%s  current_price: %s hi:%s lo:%s" % (time.strftime('%Y/%m/%d,%H:%M:%S'), current_price, hi_price, lo_price),
-                  end="\r")
+            print("time:%s  current_price: %s hi:%s lo:%s" % (time.strftime('%Y/%m/%d,%H:%M:%S'), current_price, hi_price, lo_price), end="\r")
             if self.get_last_open() < hi_price and current_price > hi_price + overshoot:
                 self.curr_dealedprice = self.execute_trade("buy", self.each_size * 1)
                 self.waitfor_position_match(orig_pos, self.each_size * 1)
