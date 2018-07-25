@@ -37,6 +37,8 @@ class Hilo:
 
         self.last_open = 0.0
         self.last_close = 0.0
+        self.flag = 0
+        self.Go=True
 
         self.within_min_process = False
 
@@ -112,11 +114,11 @@ class Hilo:
 
         return (round(bid, 0), round(ask, 0))
 
-    def get_current_price(self, num=3):
+    def get_current_price(self, num=3, product_code='FX_BTC_JPY'):
         trade_history = []
         while True:
             try:
-                trade_history = self.bitflyer_api.executions(product_code='FX_BTC_JPY', count=num)
+                trade_history = self.bitflyer_api.executions(product_code=product_code, count=num)
                 break
             except:
                 continue
@@ -130,6 +132,13 @@ class Hilo:
             cur_price += i['size'] / total_size * i['price']
 
         return (math.floor(cur_price))
+    
+    def get_kairi(self):
+        fx=self.get_current_price(product_code='FX_BTC_JPY')
+        btc = self.get_current_price(product_code='BTC_JPY')
+
+        kairi=fx/btc*100-100
+        return kairi
 
     # can be called at any time within current hour
     def get_next_hour(self):
@@ -140,6 +149,10 @@ class Hilo:
     def get_next_min(self):
         next_min = dt.datetime.fromtimestamp(time.time() - time.time() % 60 + 60)
         return next_min.timestamp()
+
+    def get_next_15min(self):
+        next_15min = dt.datetime.fromtimestamp(time.time() - time.time() % 240 + 241)
+        return next_15min.timestamp()
 
     def update_colleral(self):
         coll = self.bitflyer_api.getcollateral()
@@ -198,15 +211,15 @@ class Hilo:
 
         return (hi, lo)
 
-    def get_last_open_close(self):
-        return self.hilo.get_last_open_close(periods="1m")
+    def get_last_open_close(self,periods="1m"):
+        return self.hilo.get_last_open_close(periods=periods)
 
-    def get_last_open(self):
-        (last_open, last_close) = self.get_last_open_close()
+    def get_last_open(self,periods="1m"):
+        (last_open, last_close) = self.get_last_open_close(periods=periods)
         return last_open
 
-    def get_last_close(self):
-        (last_open, last_close) = self.get_last_open_close()
+    def get_last_close(self,periods="1m"):
+        (last_open, last_close) = self.get_last_open_close(periods=periods)
         return last_close
 
     def pos_change_watcher(self, tenlines, curr_price):
@@ -256,7 +269,6 @@ class Hilo:
         orig_pos = self.my_status["position"]
         target_diff = [3000, 4000, 5000, 6000, 7000]
         buffer = 700
-        self.flag = 0
         (hi_price, lo_price) = hilo_price
         # print("open=%s" % current_price)
         if self.my_status["position"] > 0.0005:  # current long position
@@ -371,16 +383,41 @@ class Hilo:
             print("############################################")
             self.within_min_process = False
 
+            if self.get_kairi()>4.9 and abs(self.my_status["position"])<0.0005:
+                self.go=False
+
             # within-min main loop
-            while True:
+            while self.Go:
                 current_price = self.get_current_price()
                 if not self.within_min_process:
-                    self.within_min_process = self.candle_within_process(hilo_price,
-                                                                         current_price)  # buy/sell at most once in one candle
+                    self.within_min_process = self.candle_within_process(hilo_price, current_price)  # buy/sell at most once in one candle
 
                 if time.time() > NEXT_MIN:
                     hilo_price = self.get_hilo_price(num=100, periods="1m")
                     close_price = self.get_last_close()
+                    self.candle_finish_process(hilo_price, close_price)
+                    break
+                time.sleep(0.5)
+
+    def hilo_run_15min(self):
+        print("hilo_run 15min starts")
+        hilo_price = self.get_hilo_price(num=100, periods="15m")
+        while True:
+            NEXT_15MIN = self.get_next_15min()
+            print("############################################")
+            print(time.strftime('%Y/%m/%d,%H:%M:%S'))
+            print("############################################")
+            self.within_min_process = False
+
+            # within-min main loop
+            while True:
+                current_price = self.get_current_price()
+                if not self.within_min_process:
+                    self.within_min_process = self.candle_within_process(hilo_price, current_price)  # buy/sell at most once in one candle
+
+                if time.time() > NEXT_15MIN:
+                    hilo_price = self.get_hilo_price(num=100, periods="15m")
+                    close_price = self.get_last_close(periods="15m")
                     self.candle_finish_process(hilo_price, close_price)
                     break
                 time.sleep(0.5)
@@ -390,9 +427,9 @@ if __name__ == '__main__':
     hilo = Hilo()
 
     hilo.hilo_run_1min()
-    
-    #(bid,ask)=hilo.get_current_bid_ask()
-    #print([bid,ask])
+
+    # kairi=hilo.get_kairi()
+    # print(kairi)
     
     
 
