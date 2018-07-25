@@ -391,7 +391,7 @@ if __name__ == '__main__':
 
     # hilo.hilo_run_1min()
     
-    (bid,ask)=hilo.get_bid_ask()
+    (bid,ask)=hilo.get_current_bid_ask()
     print([bid,ask])
     
     
