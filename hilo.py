@@ -268,9 +268,9 @@ class Hilo:
                 self.waitfor_position_match(orig_pos, self.each_size * 2)
                 print("Fake short -> long")
 
-    def hilo_watcher(self, hilo_price, current_price, overshoot=250):
+    def hilo_watcher(self, hilo_price, current_price, overshoot=100000):
         orig_pos = self.my_status["position"]
-        target_diff = [4000, 5000, 6000, 7000, 8000]
+        target_diff = [3000, 4000, 5000, 6000, 7000]
         buffer = 1000
         (hi_price, lo_price) = hilo_price
         # print("open=%s" % current_price)
