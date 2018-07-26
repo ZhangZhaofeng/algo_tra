@@ -136,8 +136,11 @@ class Hilo:
     def get_kairi(self):
         fx=self.get_current_price(product_code='FX_BTC_JPY')
         btc = self.get_current_price(product_code='BTC_JPY')
-
-        kairi=fx/btc*100-100
+        if btc==0.:
+            kairi=100
+        else:
+            kairi=fx/btc*100-100
+          
         return kairi
 
     # can be called at any time within current hour
@@ -267,8 +270,8 @@ class Hilo:
 
     def hilo_watcher(self, hilo_price, current_price, overshoot=250):
         orig_pos = self.my_status["position"]
-        target_diff = [3000, 4000, 5000, 6000, 7000]
-        buffer = 700
+        target_diff = [4000, 5000, 6000, 7000, 8000]
+        buffer = 1000
         (hi_price, lo_price) = hilo_price
         # print("open=%s" % current_price)
         if self.my_status["position"] > 0.0005:  # current long position
@@ -383,7 +386,7 @@ class Hilo:
             print("############################################")
             self.within_min_process = False
 
-            if self.get_kairi()>4.9 and abs(self.my_status["position"])<0.0005:
+            if self.get_kairi()>10. and abs(self.my_status["position"])<0.0005:
                 self.Go=False
 
             # within-min main loop
