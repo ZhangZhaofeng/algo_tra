@@ -28,11 +28,11 @@ class HILO:
         return x.T
 
     def get_HIGH_MA(self, HIGH):  # price=1*N (N>61)
-        ma_high=self.MA(HIGH,100)
+        ma_high=self.MA(HIGH,15)
         return ma_high
 
     def get_LOW_MA(self, LOW):  # price=1*N (N>61)
-        ma_low=self.MA(LOW,100)
+        ma_low=self.MA(LOW,16)
         return ma_low
 
     def get_long_price(self, HIGH):
@@ -54,18 +54,18 @@ class HILO:
         # print(a)
         return (int(buyprice), int(sellprice))
 
-    def simulate(self, num=100, periods="1m" ,end_offset=0):
+    def simulate(self, num=100, periods="1h" ,end_offset=0):
 
         target_diff = 4000
-        target_diff2 = 5000
-        target_diff3 = 6000
-        target_diff4 = 7000
-        target_diff5 = 8000
-        target_diff6 = 9000
-        target_diff7 = 10000
-        target_diff8 = 11000
-        target_diff9 = 12000
-        buffer=1000
+        target_diff2 = 6000
+        target_diff3 = 8000
+        target_diff4 = 10000
+        target_diff5 = 12000
+        target_diff6 = 14000
+        target_diff7 = 16000
+        target_diff8 = 18000
+        target_diff9 = 20000
+        buffer=2000
         profit_hi=9990000.
         profit_lo=0.
 
@@ -100,7 +100,7 @@ class HILO:
         long_start_price = 0.
         trade_back=0
         overshoot=0
-        trigger_diff=400
+        trigger_diff=1000
         slide=100
 
         flag=0
@@ -365,9 +365,9 @@ if __name__ == '__main__':
 
     sum = 0.
     counter_sum= 0
-    length = 4
+    length = 30
     for i in range(length):
-        value,counter = hilo.simulate(num=60*24*1 + 50, periods="1m", end_offset=3600 * 24 * (i + 0))
+        value,counter = hilo.simulate(num=24*7*1 + 50, periods="1h", end_offset=3600 * 24 * 7*1*(i + 0))
         sum = sum + value
         counter_sum = counter_sum+counter
 
