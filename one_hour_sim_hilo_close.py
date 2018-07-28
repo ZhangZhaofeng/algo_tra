@@ -28,11 +28,11 @@ class HILO:
         return x.T
 
     def get_HIGH_MA(self, HIGH):  # price=1*N (N>61)
-        ma_high=self.MA(HIGH,15)
+        ma_high=self.MA(HIGH,17)
         return ma_high
 
     def get_LOW_MA(self, LOW):  # price=1*N (N>61)
-        ma_low=self.MA(LOW,16)
+        ma_low=self.MA(LOW,17)
         return ma_low
 
     def get_long_price(self, HIGH):
@@ -65,7 +65,7 @@ class HILO:
         target_diff7 = 16000
         target_diff8 = 18000
         target_diff9 = 20000
-        buffer=2000
+        buffer=3000
         profit_hi=9990000.
         profit_lo=0.
 
@@ -99,8 +99,7 @@ class HILO:
         short_start_price= 0.
         long_start_price = 0.
         trade_back=0
-        overshoot=0
-        trigger_diff=1000
+        overshoot=1500
         slide=100
 
         flag=0
@@ -115,7 +114,7 @@ class HILO:
                 if all[t][4] < sell_price and all[t][1] > sell_price:   #low price is lower than sell_price
                     #short starts
                     short = True
-                    short_start_price = all[t][4] if abs(max([sell_price,profit_lo])-all[t][4] )<trigger_diff else max([sell_price,profit_lo])-trigger_diff
+                    short_start_price = all[t][4] if abs(max([sell_price,profit_lo])-all[t][4] )<overshoot else max([sell_price,profit_lo])-overshoot
                     trading_cash = cash
                     short_times += 1
                     amount[t][6] = 555
@@ -124,7 +123,7 @@ class HILO:
                 elif all[t][4] > buy_price and all[t][1] < buy_price: # high price is higher than buy_price
                     # long starts
                     long = True
-                    long_start_price = all[t][4] if abs(all[t][4]-min([buy_price,profit_hi]))<trigger_diff else min([buy_price,profit_hi])+trigger_diff
+                    long_start_price = all[t][4] if abs(all[t][4]-min([buy_price,profit_hi]))<overshoot else min([buy_price,profit_hi])+overshoot
                     trading_cash = cash*(1-sfd_ratio)
                     long_times += 1
                     amount[t][5] = 888
@@ -135,7 +134,7 @@ class HILO:
                 #     buy_price=all[t][1]-30
 
                 if short_start_price-all[t][3]>target_diff and flag==0:
-                    profit_hi = short_start_price - target_diff + buffer
+                    profit_hi = short_start_price - target_diff + 1000
                     flag = 1
                 elif short_start_price-all[t][3]>target_diff2 and flag==1:
                     profit_hi = short_start_price - target_diff2 + buffer
@@ -165,7 +164,7 @@ class HILO:
                 if all[t][4] > min([buy_price,profit_hi]):  # close price is higher than reverse_price
                     # short over
                     short = False
-                    short_over_price=all[t][4] if abs(all[t][4]-min([buy_price,profit_hi]))<trigger_diff else min([buy_price,profit_hi])+trigger_diff
+                    short_over_price=all[t][4] if abs(all[t][4]-min([buy_price,profit_hi]))<overshoot else min([buy_price,profit_hi])+overshoot
                     cash = (1+(short_start_price-short_over_price)/short_start_price)*trading_cash*(1-sfd_ratio)
                     if cash<0:
                         cash==0
@@ -183,14 +182,14 @@ class HILO:
                         cash = 0.
                         long_times += 1
                         amount[t][5] = 888
-                        overshoot =all[t][4]-buy_price
-                        print("overshoot=%s" %overshoot)
-                elif all[t][2]-buy_price > trigger_diff:  #fake change
+                        overpass =all[t][4]-buy_price
+                        print("overshoot=%s" %overpass)
+                elif all[t][2]-buy_price > overshoot:  #fake change
                     trade_back+=1
 
                     # short over
                     short = False
-                    short_over_price = buy_price+trigger_diff
+                    short_over_price = buy_price+overshoot
                     cash = (1 + (short_start_price - short_over_price) / short_start_price) * trading_cash*(1-sfd_ratio)
                     if cash < 0:
                         cash == 0
@@ -225,7 +224,7 @@ class HILO:
                 #     sell_price=all[t][1]+30
 
                 if all[t][2]-long_start_price>target_diff and flag==0:
-                    profit_lo=long_start_price+target_diff-buffer
+                    profit_lo=long_start_price+target_diff-1000
                     flag = 1
                 elif all[t][2]-long_start_price>target_diff2 and flag==1:
                     profit_lo = long_start_price+target_diff2-buffer
@@ -255,7 +254,7 @@ class HILO:
                 if all[t][4] < max([sell_price,profit_lo]):  # close price is lower than reverse_price
                     #long over
                     long = False
-                    long_over_price=all[t][4]  if abs(max([sell_price,profit_lo])-all[t][4] )<trigger_diff else max([sell_price,profit_lo])-trigger_diff
+                    long_over_price=all[t][4]  if abs(max([sell_price,profit_lo])-all[t][4] )<overshoot else max([sell_price,profit_lo])-overshoot
                     cash = (1 - (long_start_price - long_over_price) / long_start_price) * trading_cash
                     if cash < 0:
                         cash == 0
@@ -273,14 +272,14 @@ class HILO:
                         cash=0.
                         short_times += 1
                         amount[t][6] = 555
-                        overshoot = sell_price-all[t][4]
-                        print("overshoot=%s" % overshoot)
-                elif sell_price- all[t][3] > trigger_diff:
+                        overpass = sell_price-all[t][4]
+                        print("overshoot=%s" % overpass)
+                elif sell_price- all[t][3] > overshoot:
                     trade_back+=1
 
                     # long over
                     long = False
-                    long_over_price = sell_price-trigger_diff
+                    long_over_price = sell_price-overshoot
                     cash = (1 - (long_start_price - long_over_price) / long_start_price) * trading_cash
                     if cash < 0:
                         cash == 0

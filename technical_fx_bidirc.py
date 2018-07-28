@@ -28,7 +28,7 @@ class HILO:
         return x.T
 
     def get_HIGH_MA(self, HIGH):  # price=1*N (N>61)
-        ma_high=self.MA(HIGH,17)
+        ma_high=self.MA(HIGH,16)
         return ma_high
 
     def get_LOW_MA(self, LOW):  # price=1*N (N>61)
