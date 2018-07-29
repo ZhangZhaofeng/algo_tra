@@ -334,7 +334,7 @@ class Hilo:
                     note = "S->N"
 
                 self.latest_dealedprice = self.execute_trade("buy", trade_volunm)
-                self.waitfor_position_match(orig_pos, self.each_size * 1)
+                self.waitfor_position_match(orig_pos, trade_volunm)
                 slide = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
                                                        order_price=current_price,
                                                        type="buy")
