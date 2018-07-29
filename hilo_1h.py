@@ -42,9 +42,17 @@ class Hilo:
         self.within_candle_process = False
 
         self.update_mystatus_pos()
+        self.update_latest_dealedprice()
 
     def logger(self,data):
         data2csv.data2csv(data)
+
+    def update_latest_dealedprice(self):
+        if abs(self.my_status["position"])>0.005:
+            order=self.get_last_order()
+            if len(order)>0:
+                print("latest_dealedprice updated")
+                self.latest_dealedprice=order["average_price"]
 
     def trade_bitflyer_fx(self, type, amount=0.01):
         print("trade bitflyer_fx")
