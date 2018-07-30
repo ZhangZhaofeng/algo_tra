@@ -407,6 +407,7 @@ class Hilo:
         return False
 
     def candle_finish_process(self, hilo_price, close_price):
+        print("")
         print("candle_finish_process")
 
         if not self.within_candle_process:
