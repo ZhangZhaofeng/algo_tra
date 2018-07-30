@@ -259,22 +259,22 @@ class Hilo:
 
     def mdfy_position(self, hilo, close_price):
         (hi_price, lo_price) = hilo
-        trade_volunm = self.each_size * 2
+        trade_volume = self.each_size * 2
         orig_pos = self.my_status["position"]
         if self.my_status["position"] > 0.0005:  # current long position
             if close_price < hi_price:
-                self.latest_dealedprice = self.execute_trade("sell", trade_volunm)
-                self.waitfor_position_match(orig_pos, -trade_volunm)
+                self.latest_dealedprice = self.execute_trade("sell", trade_volume)
+                self.waitfor_position_match(orig_pos, -trade_volume)
                 slide = self.execute_slide_computation(self.latest_dealedprice, close_price, "sell")
-                self.trade_log.append([self.latest_dealedprice, slide, -trade_volunm, "F l->s"])
+                self.trade_log.append([self.latest_dealedprice, slide, -trade_volume, "F l->s"])
                 print("Fake long -> short")
 
         elif self.my_status["position"] < -0.0005:  # current short position
             if close_price > lo_price:
-                self.latest_dealedprice = self.execute_trade("buy", trade_volunm)
-                self.waitfor_position_match(orig_pos, trade_volunm)
+                self.latest_dealedprice = self.execute_trade("buy", trade_volume)
+                self.waitfor_position_match(orig_pos, trade_volume)
                 slide = self.execute_slide_computation(self.latest_dealedprice, close_price, "buy")
-                self.trade_log.append([self.latest_dealedprice, slide, trade_volunm, "F s->l"])
+                self.trade_log.append([self.latest_dealedprice, slide, trade_volume, "F s->l"])
                 print("Fake short -> long")
 
     def hilo_watcher(self, hilo_price, current_price, overshoot=2000):
@@ -287,21 +287,38 @@ class Hilo:
             print("CP:%s lo= %s pro_hi= %s" % (current_price, lo_price, self.profit_hi), end="\r")
             if current_price < max([lo_price- overshoot, self.profit_hi]) :
                 if current_price < lo_price - overshoot:
-                    trade_volunm = self.each_size * 2
+                    trade_volume = self.each_size * 2
                     note = "L->S"
-                else:
-                    trade_volunm = self.each_size * 1
-                    note = "L->N"
 
-                self.latest_dealedprice = self.execute_trade("sell", trade_volunm)
-                self.waitfor_position_match(orig_pos, -trade_volunm)
-                slide = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
-                                                       order_price=current_price,
-                                                       type="sell")
-                self.trade_log.append([self.latest_dealedprice, slide, -trade_volunm, note])
-                self.profit_hi = 0.0
-                self.flag = 0
-                return True
+                    self.latest_dealedprice = self.execute_trade("sell", trade_volume)
+                    self.waitfor_position_match(orig_pos, -trade_volume)
+                    slide = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
+                                                           order_price=current_price,
+                                                           type="sell")
+                    self.trade_log.append([self.latest_dealedprice, slide, -trade_volume, note])
+                    self.profit_hi = 0.0
+                    self.flag = 0
+                    return True
+                elif current_price < self.latest_dealedprice-1500 and self.flag == 1:
+                    print("Price volatility too large -> pro_hi reset")
+                    self.profit_hi = 0.0
+                    self.flag = 0
+                    return False
+                else:
+                    trade_volume = self.each_size * 1
+                    note = "L->N"
+                    self.latest_dealedprice = self.execute_trade("sell", trade_volume)
+                    self.waitfor_position_match(orig_pos, -trade_volume)
+                    slide = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
+                                                           order_price=current_price,
+                                                           type="sell")
+                    self.trade_log.append([self.latest_dealedprice, slide, -trade_volume, note])
+                    self.profit_hi = 0.0
+                    self.flag = 0
+                    return True
+
+
+
             elif current_price - self.latest_dealedprice > target_diff[0] and self.flag == 0:
                 self.profit_hi = self.latest_dealedprice + target_diff[0] - 1500
                 self.flag = 1
@@ -335,21 +352,37 @@ class Hilo:
             print("CP:%s hi:%s pro_lo=%s" % (current_price, hi_price, self.profit_lo), end="\r")
             if current_price > min([hi_price+ overshoot, self.profit_lo]) :
                 if current_price > hi_price + overshoot:
-                    trade_volunm = self.each_size * 2
+                    trade_volume = self.each_size * 2
                     note = "S->L"
+                    self.latest_dealedprice = self.execute_trade("buy", trade_volume)
+                    self.waitfor_position_match(orig_pos, trade_volume)
+                    slide = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
+                                                           order_price=current_price,
+                                                           type="buy")
+                    self.trade_log.append([self.latest_dealedprice, slide, trade_volume, note])
+                    self.profit_lo = 9990000
+                    self.flag = 0
+                    return True
+                elif current_price>self.profit_lo+1500 and self.flag == 1:
+                    print("Price volatility too large -> pro_lo reset")
+                    self.profit_lo = 9990000
+                    self.flag = 0
+                    return False
                 else:
-                    trade_volunm = self.each_size * 1
+                    trade_volume = self.each_size * 1
                     note = "S->N"
+                    self.latest_dealedprice = self.execute_trade("buy", trade_volume)
+                    self.waitfor_position_match(orig_pos, trade_volume)
+                    slide = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
+                                                           order_price=current_price,
+                                                           type="buy")
+                    self.trade_log.append([self.latest_dealedprice, slide, trade_volume, note])
+                    self.profit_lo = 9990000
+                    self.flag = 0
+                    return True
 
-                self.latest_dealedprice = self.execute_trade("buy", trade_volunm)
-                self.waitfor_position_match(orig_pos, trade_volunm)
-                slide = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
-                                                       order_price=current_price,
-                                                       type="buy")
-                self.trade_log.append([self.latest_dealedprice, slide, trade_volunm, note])
-                self.profit_lo = 9990000
-                self.flag = 0
-                return True
+
+
             elif self.latest_dealedprice - current_price > target_diff[0] and self.flag == 0:
                 self.profit_lo = self.latest_dealedprice - target_diff[0] + 1500
                 self.flag = 1
@@ -382,24 +415,24 @@ class Hilo:
         elif abs(self.my_status["position"]) < 0.0005:  # "Null"
             print("CP:%s hi:%s lo:%s" % (current_price, hi_price, lo_price), end="\r")
             if self.get_last_close() < hi_price and current_price > hi_price + overshoot:
-                trade_volunm = self.each_size * 1
-                self.latest_dealedprice = self.execute_trade("buy", trade_volunm)
-                self.waitfor_position_match(orig_pos, trade_volunm)
+                trade_volume = self.each_size * 1
+                self.latest_dealedprice = self.execute_trade("buy", trade_volume)
+                self.waitfor_position_match(orig_pos, trade_volume)
                 slide = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
                                                        order_price=current_price,
                                                        type="buy")
-                self.trade_log.append([self.latest_dealedprice, slide, trade_volunm, "N->L"])
-                return True
+                self.trade_log.append([self.latest_dealedprice, slide, trade_volume, "N->L"])
+                return False
 
             elif self.get_last_close() > lo_price and current_price < lo_price - overshoot:
-                trade_volunm = self.each_size * 1
-                self.latest_dealedprice = self.execute_trade("sell", trade_volunm)
-                self.waitfor_position_match(orig_pos, -trade_volunm)
+                trade_volume = self.each_size * 1
+                self.latest_dealedprice = self.execute_trade("sell", trade_volume)
+                self.waitfor_position_match(orig_pos, -trade_volume)
                 slide = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
                                                        order_price=current_price,
                                                        type="sell")
-                self.trade_log.append([self.latest_dealedprice, slide, -trade_volunm, "N->S"])
-                return True
+                self.trade_log.append([self.latest_dealedprice, slide, -trade_volume, "N->S"])
+                return False
 
             else:
                 pass
