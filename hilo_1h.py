@@ -333,7 +333,7 @@ class Hilo:
                 pass
         elif self.my_status["position"] < -0.0005:  # current short position
             print("CP:%s hi:%s pro_lo=%s" % (current_price, hi_price, self.profit_lo), end="\r")
-            if current_price > min([hi_price, self.profit_lo+ overshoot]) :
+            if current_price > min([hi_price+ overshoot, self.profit_lo]) :
                 if current_price > hi_price + overshoot:
                     trade_volunm = self.each_size * 2
                     note = "S->L"

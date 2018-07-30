@@ -146,7 +146,7 @@ class HILO:
                 #     buy_price=all[t][1]-30
 
                 if short_start_price-all[t][3]>target_diff and flag==0:
-                    profit_hi = short_start_price - target_diff + 1000
+                    profit_hi = short_start_price - target_diff + 1500
                     flag = 1
                 elif short_start_price-all[t][3]>target_diff2 and flag==1:
                     profit_hi = short_start_price - target_diff2 + buffer
@@ -236,7 +236,7 @@ class HILO:
                 #     sell_price=all[t][1]+30
 
                 if all[t][2]-long_start_price>target_diff and flag==0:
-                    profit_lo=long_start_price+target_diff-1000
+                    profit_lo=long_start_price+target_diff-1500
                     flag = 1
                 elif all[t][2]-long_start_price>target_diff2 and flag==1:
                     profit_lo = long_start_price+target_diff2-buffer
