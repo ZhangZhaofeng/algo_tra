@@ -224,26 +224,38 @@ class AutoTrading:
         return([checkin_price, position0])
 
     def get_current_price(self, number):
-        trade_history = self.bitflyer_api.executions(product_code = 'FX_BTC_JPY', count = number)
-        total_size = 0.0
-        cur_price = 0.0
-        for i in trade_history:
-            total_size += i['size']
+        d = 200
+        while d > 0:
+            try:
+                trade_history = self.bitflyer_api.executions(product_code = 'FX_BTC_JPY', count = number)
+                total_size = 0.0
+                cur_price = 0.0
+                for i in trade_history:
+                    total_size += i['size']
 
-        for i in trade_history:
-            cur_price += i['size']/total_size * i['price']
+                for i in trade_history:
+                    cur_price += i['size']/total_size * i['price']
 
-        return(math.floor(cur_price))
+                return(math.floor(cur_price))
+            except Exception:
+                print('Get price error ,try again')
+                time.sleep(10)
+                d -= 1
+                continue
+        print('Try too many times, failed')
+        return 0.0
 
     def detect_and_trade(self, direction, line, amount):
         price = self.get_current_price(10)
         if direction == 'buy':
-            if price > line:
+            if price > line and price != 0 :
+                predict.print_and_write(price)
                 order = self.trade_market('buy', amount, int(price))
                 predict.print_and_write(order)
                 return(True)
         elif direction == 'sell':
-            if price < line:
+            if price < line and price != 0 :
+                predict.print_and_write(price)
                 order = self.trade_market('sell', amount, int(price))
                 predict.print_and_write(order)
                 return(True)
