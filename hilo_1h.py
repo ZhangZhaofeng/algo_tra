@@ -292,10 +292,13 @@ class Hilo:
 
                     self.latest_dealedprice = self.execute_trade("sell", trade_volume)
                     self.waitfor_position_match(orig_pos, -trade_volume)
-                    slide = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
+                    slide1 = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
                                                            order_price=current_price,
                                                            type="sell")
-                    self.trade_log.append([self.latest_dealedprice, slide, -trade_volume, note])
+                    slide2 = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
+                                                           order_price=lo_price - overshoot,
+                                                           type="sell")
+                    self.trade_log.append([self.latest_dealedprice, slide1,slide2, -trade_volume, note])
                     self.profit_hi = 0.0
                     self.flag = 0
                     return True
@@ -309,10 +312,13 @@ class Hilo:
                     note = "L->N"
                     self.latest_dealedprice = self.execute_trade("sell", trade_volume)
                     self.waitfor_position_match(orig_pos, -trade_volume)
-                    slide = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
+                    slide1 = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
                                                            order_price=current_price,
                                                            type="sell")
-                    self.trade_log.append([self.latest_dealedprice, slide, -trade_volume, note])
+                    slide2 = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
+                                                           order_price=self.profit_hi,
+                                                           type="sell")
+                    self.trade_log.append([self.latest_dealedprice, slide1,slide2, -trade_volume, note])
                     self.profit_hi = 0.0
                     self.flag = 0
                     return True
@@ -356,10 +362,13 @@ class Hilo:
                     note = "S->L"
                     self.latest_dealedprice = self.execute_trade("buy", trade_volume)
                     self.waitfor_position_match(orig_pos, trade_volume)
-                    slide = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
+                    slide1 = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
                                                            order_price=current_price,
                                                            type="buy")
-                    self.trade_log.append([self.latest_dealedprice, slide, trade_volume, note])
+                    slide2 = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
+                                                           order_price=hi_price + overshoot,
+                                                           type="buy")
+                    self.trade_log.append([self.latest_dealedprice, slide1, slide2, trade_volume, note])
                     self.profit_lo = 9990000
                     self.flag = 0
                     return True
@@ -373,10 +382,13 @@ class Hilo:
                     note = "S->N"
                     self.latest_dealedprice = self.execute_trade("buy", trade_volume)
                     self.waitfor_position_match(orig_pos, trade_volume)
-                    slide = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
+                    slide1 = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
                                                            order_price=current_price,
                                                            type="buy")
-                    self.trade_log.append([self.latest_dealedprice, slide, trade_volume, note])
+                    slide2 = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
+                                                           order_price=self.profit_lo,
+                                                           type="buy")
+                    self.trade_log.append([self.latest_dealedprice, slide1, slide2, trade_volume, note])
                     self.profit_lo = 9990000
                     self.flag = 0
                     return True
@@ -449,7 +461,7 @@ class Hilo:
             self.mdfy_position(hilo_price, close_price)
 
         self.update_mystatus_pos()
-        self.log.append(close_price)
+        self.log.append(close_price[0])
         self.log.append(self.my_status["position"])
         self.log.append(self.my_status["rest"] + self.my_status["pnl"])
         self.log.append(hilo_price)
