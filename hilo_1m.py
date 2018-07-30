@@ -408,7 +408,10 @@ class Hilo:
 if __name__ == '__main__':
     hilo = Hilo()
 
-    hilo.hilo_run_1min()
+    # hilo.hilo_run_1min()
+    order=hilo.get_last_order()
+    print(len(order))
+    print(order["average_price"])
 
     # kairi=hilo.get_kairi()
     # print(kairi)
