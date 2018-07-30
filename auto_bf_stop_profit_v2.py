@@ -324,7 +324,7 @@ class AutoTrading:
         if initposition > 0.0:
         # if we have a positive position, detect a change to quit and switch
             tdelta = self.bf_timejudge(starttime)
-            predict.print_and_write('Detecting a change to switch short')
+            predict.print_and_write('Detecting a chance to switch short')
             while tdelta < 3600:
                 direction = 'sell'
                 if not self.switch_in_hour:
@@ -351,7 +351,7 @@ class AutoTrading:
         elif initposition < 0.0:
             # if we have a positive position, detect a change to quit and switch
             tdelta = self.bf_timejudge(starttime)
-            predict.print_and_write('Detecting a change to switch long')
+            predict.print_and_write('Detecting a chance to switch long')
             while tdelta < 3600:
                 direction = 'buy'
 
@@ -381,7 +381,7 @@ class AutoTrading:
         elif initposition == 0.0 and enable_other_side:
             # if we have a positive position, detect a change to quit and switch
             tdelta = self.bf_timejudge(starttime)
-            predict.print_and_write('Detecting a change to get in')
+            predict.print_and_write('Detecting a chance to get in')
             switch_in_hourbuy = False
             switch_in_hoursell = False
             while tdelta < 3600:
@@ -415,7 +415,7 @@ class AutoTrading:
         predict.print_and_write('Use a trial order')
         #predict.print_and_write('Current position: %f, price: %f' % (checkins[1], checkins[0]))
         while tdelta < 3600:
-            cur_price = self.get_current_price(100)
+            cur_price = self.get_current_price(50)
             if checkins[1] > 0:
                 profit = cur_price - checkins[0]
             elif checkins[1] < 0:
