@@ -124,7 +124,7 @@ class Hilo:
 
         return (round(bid, 0), round(ask, 0))
 
-    def get_current_price(self, num=3, product_code='FX_BTC_JPY'):
+    def get_unchecked_price(self, num=3, product_code='FX_BTC_JPY'):
         trade_history = []
         while True:
             try:
@@ -142,6 +142,14 @@ class Hilo:
             cur_price += i['size'] / total_size * i['price']
 
         return (math.floor(cur_price))
+
+    def get_current_price(self,num=3, product_code='FX_BTC_JPY'):
+        price=self.get_unchecked_price(num, product_code)
+        while price<1.0:
+            print("Getting price again")
+            price = self.get_unchecked_price(num, product_code)
+            time.sleep(0.5)
+        return price
 
     def get_kairi(self):
         fx = self.get_current_price(product_code='FX_BTC_JPY')
