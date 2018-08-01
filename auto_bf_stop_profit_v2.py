@@ -489,6 +489,9 @@ class AutoTrading:
             self.judge_position(suggest_position)
             #order = self.update_order(checkins, hilo)
 
+        if not vars.has_key('suggest_position'):
+            suggest_position = checkins[1]
+
         self.trade_in_hour(suggest_position, starttime, hilo)
         # elif checkins[1] != 0.0 and not self.switch_in_hour:
         #     predict.print_and_write('Update order')
