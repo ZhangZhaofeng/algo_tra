@@ -471,6 +471,7 @@ class AutoTrading:
         time.sleep(1)
         starttime = time.gmtime(self.get_curhour())
         checkins = self.get_checkin_price()
+        suggest_position = checkins[1]
         predict.print_and_write('Check in price: %f, position: %f' % (checkins[0], checkins[1]))
         cur_price = self.get_current_price(100)
         predict.print_and_write('Current price: %f' % (cur_price))
@@ -488,9 +489,6 @@ class AutoTrading:
             # we should verify the order is dealing or not here
             self.judge_position(suggest_position)
             #order = self.update_order(checkins, hilo)
-
-        if not vars.has_key('suggest_position'):
-            suggest_position = checkins[1]
 
         self.trade_in_hour(suggest_position, starttime, hilo)
         # elif checkins[1] != 0.0 and not self.switch_in_hour:
