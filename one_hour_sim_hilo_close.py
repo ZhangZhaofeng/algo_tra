@@ -51,8 +51,13 @@ class HILO:
         return (last_open,last_close)
 
     def publish_current_hilo_price(self, num=100, periods="1H"):
-        (time_stamp, open_price, high_price, low_price, close_price) = self.btc_charts.get_price_array_till_finaltime(
-            final_unixtime_stamp=time.time(), num=num, periods=periods, converter=True)
+        while 1:
+            try:
+                (time_stamp, open_price, high_price, low_price, close_price) = self.btc_charts.get_price_array_till_finaltime(
+                    final_unixtime_stamp=time.time(), num=num, periods=periods, converter=True)
+                break
+            except:
+                continue
 
         low_price_ma = self.get_short_price(low_price)
         high_price_ma = self.get_long_price(high_price)
@@ -373,7 +378,7 @@ if __name__ == '__main__':
     counter_sum= 0
     length = 30
     for i in range(length):
-        value,counter = hilo.simulate(num=24*7*1 + 50, periods="1h", end_offset=3600 * 24 * 7*1*(i + 0))
+        value,counter = hilo.simulate(num=24*1*1 + 50, periods="1h", end_offset=3600 * 24 * 7*1*(i + 0))
         sum = sum + value
         counter_sum = counter_sum+counter
 

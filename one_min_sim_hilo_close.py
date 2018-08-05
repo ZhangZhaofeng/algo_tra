@@ -28,11 +28,11 @@ class HILO:
         return x.T
 
     def get_HIGH_MA(self, HIGH):  # price=1*N (N>61)
-        ma_high=self.MA(HIGH,100)
+        ma_high=self.MA(HIGH,16)
         return ma_high
 
     def get_LOW_MA(self, LOW):  # price=1*N (N>61)
-        ma_low=self.MA(LOW,100)
+        ma_low=self.MA(LOW,16)
         return ma_low
 
     def get_long_price(self, HIGH):
@@ -43,9 +43,14 @@ class HILO:
         ma_low = self.get_LOW_MA(LOW)
         return ma_low
 
-    def publish_current_hilo_price(self, num=100, periods="1H"):
-        (time_stamp, open_price, high_price, low_price, close_price) = self.btc_charts.get_price_array_till_finaltime(
-            final_unixtime_stamp=time.time(), num=num, periods=periods, converter=True)
+    def publish_current_hilo_price(self, num=100, periods="1m"):
+        while 1:
+            try:
+                (time_stamp, open_price, high_price, low_price, close_price) = self.btc_charts.get_price_array_till_finaltime(
+                    final_unixtime_stamp=time.time(), num=num, periods=periods, converter=True)
+                break
+            except:
+                continue
 
         low_price_ma = self.get_short_price(low_price)
         high_price_ma = self.get_long_price(high_price)
@@ -71,7 +76,7 @@ class HILO:
 
 
         leverage = 1.0
-        sfd_ratio = 0.0025  # trading fee percent for long only
+        sfd_ratio = 0.00  # trading fee percent for long only
 
         ################Simulation#######################
         (time_stamp, open_price, high_price, low_price, close_price) = self.btc_charts.get_price_array_till_finaltime(

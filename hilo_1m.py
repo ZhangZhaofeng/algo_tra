@@ -8,9 +8,10 @@ import time
 import datetime as dt
 import predict
 import sys
-import technical_fx_bidirc as tfb
+import one_min_sim_hilo_close as ohshc
 import math
 import apis
+import data2csv
 
 from email.mime.text import MIMEText
 from email.utils import formatdate
@@ -19,8 +20,8 @@ import smtplib
 
 class Hilo:
     def __init__(self):
-        print("hilo Algo 1min Starts")
-        self.hilo = tfb.HILO()
+        print("hilo Algo 1Hin Starts")
+        self.hilo = ohshc.HILO()
         # print(mytrade.get_asset_quoinex())
 
         print("Initializing Bitflyer API ")
@@ -28,21 +29,30 @@ class Hilo:
 
         self.my_status = {"position": 0., "rest": 0., "pnl": 0.}  # "nth":[entry_cash, entry_price]
         self.each_size = 0.01
-        self.atr_ratio = [0.0, 0.2, 0.4, 0.7, 1.0]
 
         self.latest_dealedprice = 0.0
-        self.tenlines = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.profit_hi = 0.0
         self.profit_lo = 9990000
 
         self.last_open = 0.0
         self.last_close = 0.0
         self.flag = 0
-        self.Go=True
+        self.Go = True
 
-        self.within_min_process = False
+        self.within_candle_process = False
 
         self.update_mystatus_pos()
+        self.update_latest_dealedprice()
+
+    def logger(self,data):
+        data2csv.data2csv(data,csvname = 'log_hilo_1m.csv')
+
+    def update_latest_dealedprice(self):
+        if abs(self.my_status["position"])>0.005:
+            order=self.get_last_order()
+            if len(order)>0:
+                print("latest_dealedprice updated")
+                self.latest_dealedprice=order["average_price"]
 
     def trade_bitflyer_fx(self, type, amount=0.01):
         print("trade bitflyer_fx")
@@ -114,7 +124,7 @@ class Hilo:
 
         return (round(bid, 0), round(ask, 0))
 
-    def get_current_price(self, num=3, product_code='FX_BTC_JPY'):
+    def get_unchecked_price(self, num=3, product_code='FX_BTC_JPY'):
         trade_history = []
         while True:
             try:
@@ -132,20 +142,28 @@ class Hilo:
             cur_price += i['size'] / total_size * i['price']
 
         return (math.floor(cur_price))
-    
+
+    def get_current_price(self,num=3, product_code='FX_BTC_JPY'):
+        price=self.get_unchecked_price(num, product_code)
+        while price<1.0:
+            print("Getting price again")
+            price = self.get_unchecked_price(num, product_code)
+            time.sleep(0.5)
+        return price
+
     def get_kairi(self):
-        fx=self.get_current_price(product_code='FX_BTC_JPY')
+        fx = self.get_current_price(product_code='FX_BTC_JPY')
         btc = self.get_current_price(product_code='BTC_JPY')
-        if btc==0.:
-            kairi=100
+        if btc == 0.:
+            kairi = 100
         else:
-            kairi=fx/btc*100-100
-          
+            kairi = fx / btc * 100 - 100
+
         return kairi
 
     # can be called at any time within current hour
     def get_next_hour(self):
-        next_hour = dt.datetime.fromtimestamp(time.time() - time.time() % 3600 + 3680)
+        next_hour = dt.datetime.fromtimestamp(time.time() - time.time() % 3600 + 3601)
         return next_hour.timestamp()
 
     # can be called at any time within current min
@@ -214,22 +232,16 @@ class Hilo:
 
         return (hi, lo)
 
-    def get_last_open_close(self,periods="1m"):
+    def get_last_open_close(self, periods="1m"):
         return self.hilo.get_last_open_close(periods=periods)
 
-    def get_last_open(self,periods="1m"):
+    def get_last_open(self, periods="1m"):
         (last_open, last_close) = self.get_last_open_close(periods=periods)
         return last_open
 
-    def get_last_close(self,periods="1m"):
+    def get_last_close(self, periods="1m"):
         (last_open, last_close) = self.get_last_open_close(periods=periods)
         return last_close
-
-    def pos_change_watcher(self, tenlines, curr_price):
-        position_no = int(self.my_status["position"] / self.each_size)
-        curr_line_no = self.get_curr_line_no(tenlines, curr_price)
-
-        return int(curr_line_no - position_no)
 
     def waitfor_position_match(self, orig_size, trade_size):
         self.update_mystatus_pos()
@@ -255,108 +267,191 @@ class Hilo:
 
     def mdfy_position(self, hilo, close_price):
         (hi_price, lo_price) = hilo
+        trade_volume = self.each_size * 2
         orig_pos = self.my_status["position"]
         if self.my_status["position"] > 0.0005:  # current long position
             if close_price < hi_price:
-                self.latest_dealedprice = self.execute_trade("sell", self.each_size * 2)
-                self.waitfor_position_match(orig_pos, -self.each_size * 2)
+                self.latest_dealedprice = self.execute_trade("sell", trade_volume)
+                self.waitfor_position_match(orig_pos, -trade_volume)
+                slide = self.execute_slide_computation(self.latest_dealedprice, close_price, "sell")
+                self.trade_log.append([self.latest_dealedprice, slide, -trade_volume, "F l->s"])
                 print("Fake long -> short")
 
-        elif self.my_status["position"] < -0.0005:  # current long position
+        elif self.my_status["position"] < -0.0005:  # current short position
             if close_price > lo_price:
-                self.latest_dealedprice = self.execute_trade("buy", self.each_size * 2)
-                self.waitfor_position_match(orig_pos, self.each_size * 2)
+                self.latest_dealedprice = self.execute_trade("buy", trade_volume)
+                self.waitfor_position_match(orig_pos, trade_volume)
+                slide = self.execute_slide_computation(self.latest_dealedprice, close_price, "buy")
+                self.trade_log.append([self.latest_dealedprice, slide, trade_volume, "F s->l"])
                 print("Fake short -> long")
 
-    def hilo_watcher(self, hilo_price, current_price, overshoot=100000):
+    def hilo_watcher(self, hilo_price, current_price, overshoot=2000):
         orig_pos = self.my_status["position"]
-        target_diff = [3000, 4000, 5000, 6000, 7000]
+        target_diff = [2500, 3500, 4500, 5500, 6500, 7500, 8500, 9500, 11000]
         buffer = 1000
         (hi_price, lo_price) = hilo_price
         # print("open=%s" % current_price)
         if self.my_status["position"] > 0.0005:  # current long position
-            print("##### time:%s current_price:%s lo= %s profit_hi= %s" % (time.strftime('%Y/%m/%d,%H:%M:%S'),current_price, lo_price, self.profit_hi),end="\r")
-            if current_price < max([lo_price, self.profit_hi]) - overshoot:
+            print("CP:%s lo= %s pro_hi= %s" % (current_price, lo_price, self.profit_hi), end="\r")
+            if current_price < max([lo_price- overshoot, self.profit_hi]) :
                 if current_price < lo_price - overshoot:
-                    self.latest_dealedprice = self.execute_trade("sell", self.each_size * 2)
-                    self.waitfor_position_match(orig_pos, -self.each_size * 2)
-                else:
-                    self.latest_dealedprice = self.execute_trade("sell", self.each_size * 1)
-                    self.waitfor_position_match(orig_pos, -self.each_size * 1)
+                    trade_volume = self.each_size * 2
+                    note = "L->S"
 
-                self.execute_slide_computation(dealed_price=self.latest_dealedprice,
-                                               order_price=current_price,
-                                               type="sell")
-                self.profit_hi = 0.0
-                self.flag = 0
-                return True
+                    self.latest_dealedprice = self.execute_trade("sell", trade_volume)
+                    self.waitfor_position_match(orig_pos, -trade_volume)
+                    slide1 = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
+                                                           order_price=current_price,
+                                                           type="sell")
+                    slide2 = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
+                                                           order_price=lo_price - overshoot,
+                                                           type="sell")
+                    self.trade_log.append([self.latest_dealedprice, slide1,slide2, -trade_volume, note])
+                    self.profit_hi = 0.0
+                    self.flag = 0
+                    return True
+                elif current_price < self.latest_dealedprice-1500 and self.flag == 1:
+                    print("Price volatility too large -> pro_hi reset")
+                    self.profit_hi = 0.0
+                    self.flag = 0
+                    return False
+                else:
+                    trade_volume = self.each_size * 1
+                    note = "L->N"
+                    self.latest_dealedprice = self.execute_trade("sell", trade_volume)
+                    self.waitfor_position_match(orig_pos, -trade_volume)
+                    slide1 = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
+                                                           order_price=current_price,
+                                                           type="sell")
+                    slide2 = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
+                                                           order_price=self.profit_hi,
+                                                           type="sell")
+                    self.trade_log.append([self.latest_dealedprice, slide1,slide2, -trade_volume, note])
+                    self.profit_hi = 0.0
+                    self.flag = 0
+                    return True
+
+
             elif current_price - self.latest_dealedprice > target_diff[0] and self.flag == 0:
-                self.profit_hi = self.latest_dealedprice + target_diff[0] - 2000
+                self.profit_hi = self.latest_dealedprice + target_diff[0] - 1500
                 self.flag = 1
             elif current_price - self.latest_dealedprice > target_diff[1] and self.flag == 1:
-                self.profit_hi = self.latest_dealedprice + target_diff[1] - 1000
+                self.profit_hi = self.latest_dealedprice + target_diff[1] - buffer
                 self.flag = 2
             elif current_price - self.latest_dealedprice > target_diff[2] and self.flag == 2:
-                self.profit_hi = self.latest_dealedprice + target_diff[2] - 1000
+                self.profit_hi = self.latest_dealedprice + target_diff[2] - buffer
                 self.flag = 3
             elif current_price - self.latest_dealedprice > target_diff[3] and self.flag == 3:
-                self.profit_hi = self.latest_dealedprice + target_diff[3] - 1000
+                self.profit_hi = self.latest_dealedprice + target_diff[3] - buffer
                 self.flag = 4
             elif current_price - self.latest_dealedprice > target_diff[4] and self.flag == 4:
-                self.profit_hi = self.latest_dealedprice + target_diff[4] - 1000
+                self.profit_hi = self.latest_dealedprice + target_diff[4] - buffer
                 self.flag = 5
+            elif current_price - self.latest_dealedprice > target_diff[5] and self.flag == 5:
+                self.profit_hi = self.latest_dealedprice + target_diff[5] - buffer
+                self.flag = 6
+            elif current_price - self.latest_dealedprice > target_diff[6] and self.flag == 6:
+                self.profit_hi = self.latest_dealedprice + target_diff[6] - buffer
+                self.flag = 7
+            elif current_price - self.latest_dealedprice > target_diff[7] and self.flag == 7:
+                self.profit_hi = self.latest_dealedprice + target_diff[7] - buffer
+                self.flag = 8
+            elif current_price - self.latest_dealedprice > target_diff[8] and self.flag == 8:
+                self.profit_hi = self.latest_dealedprice + target_diff[8] - buffer
+                self.flag = 9
             else:
                 pass
         elif self.my_status["position"] < -0.0005:  # current short position
-            print("##### time:%s current_price:%s hi= %s profit_lo=%s" % (time.strftime('%Y/%m/%d,%H:%M:%S'),current_price, hi_price, self.profit_lo),end="\r")
-            if current_price > min([hi_price, self.profit_lo]) + overshoot:
+            print("CP:%s hi:%s pro_lo=%s" % (current_price, hi_price, self.profit_lo), end="\r")
+            if current_price > min([hi_price+ overshoot, self.profit_lo]) :
                 if current_price > hi_price + overshoot:
-                    self.latest_dealedprice = self.execute_trade("buy", self.each_size * 2)
-                    self.waitfor_position_match(orig_pos, self.each_size * 2)
-
+                    trade_volume = self.each_size * 2
+                    note = "S->L"
+                    self.latest_dealedprice = self.execute_trade("buy", trade_volume)
+                    self.waitfor_position_match(orig_pos, trade_volume)
+                    slide1 = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
+                                                           order_price=current_price,
+                                                           type="buy")
+                    slide2 = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
+                                                           order_price=hi_price + overshoot,
+                                                           type="buy")
+                    self.trade_log.append([self.latest_dealedprice, slide1, slide2, trade_volume, note])
+                    self.profit_lo = 9990000
+                    self.flag = 0
+                    return True
+                elif current_price>self.profit_lo+1500 and self.flag == 1:
+                    print("Price volatility too large -> pro_lo reset")
+                    self.profit_lo = 9990000
+                    self.flag = 0
+                    return False
                 else:
-                    self.latest_dealedprice = self.execute_trade("buy", self.each_size * 1)
-                    self.waitfor_position_match(orig_pos, self.each_size * 1)
-                self.execute_slide_computation(dealed_price=self.latest_dealedprice,
-                                               order_price=current_price,
-                                               type="buy")
-                self.profit_lo = 9990000
-                self.flag = 0
-                return True
+                    trade_volume = self.each_size * 1
+                    note = "S->N"
+                    self.latest_dealedprice = self.execute_trade("buy", trade_volume)
+                    self.waitfor_position_match(orig_pos, trade_volume)
+                    slide1 = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
+                                                           order_price=current_price,
+                                                           type="buy")
+                    slide2 = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
+                                                           order_price=self.profit_lo,
+                                                           type="buy")
+                    self.trade_log.append([self.latest_dealedprice, slide1, slide2, trade_volume, note])
+                    self.profit_lo = 9990000
+                    self.flag = 0
+                    return True
+
+
+
             elif self.latest_dealedprice - current_price > target_diff[0] and self.flag == 0:
-                self.profit_lo = self.latest_dealedprice - target_diff[0] + 2000
+                self.profit_lo = self.latest_dealedprice - target_diff[0] + 1500
                 self.flag = 1
             elif self.latest_dealedprice - current_price > target_diff[1] and self.flag == 1:
-                self.profit_lo = self.latest_dealedprice - target_diff[1] + 1000
+                self.profit_lo = self.latest_dealedprice - target_diff[1] + buffer
                 self.flag = 2
             elif self.latest_dealedprice - current_price > target_diff[2] and self.flag == 2:
-                self.profit_lo = self.latest_dealedprice - target_diff[2] + 1000
+                self.profit_lo = self.latest_dealedprice - target_diff[2] + buffer
                 self.flag = 3
             elif self.latest_dealedprice - current_price > target_diff[3] and self.flag == 3:
-                self.profit_lo = self.latest_dealedprice - target_diff[3] + 1000
+                self.profit_lo = self.latest_dealedprice - target_diff[3] + buffer
                 self.flag = 4
             elif self.latest_dealedprice - current_price > target_diff[4] and self.flag == 4:
-                self.profit_lo = self.latest_dealedprice - target_diff[4] + 1000
+                self.profit_lo = self.latest_dealedprice - target_diff[4] + buffer
                 self.flag = 5
+            elif self.latest_dealedprice - current_price > target_diff[5] and self.flag == 5:
+                self.profit_lo = self.latest_dealedprice - target_diff[5] + buffer
+                self.flag = 6
+            elif self.latest_dealedprice - current_price > target_diff[6] and self.flag == 6:
+                self.profit_lo = self.latest_dealedprice - target_diff[6] + buffer
+                self.flag = 7
+            elif self.latest_dealedprice - current_price > target_diff[7] and self.flag == 7:
+                self.profit_lo = self.latest_dealedprice - target_diff[7] + buffer
+                self.flag = 8
+            elif self.latest_dealedprice - current_price > target_diff[8] and self.flag == 8:
+                self.profit_lo = self.latest_dealedprice - target_diff[8] + buffer
+                self.flag = 9
             else:
                 pass
         elif abs(self.my_status["position"]) < 0.0005:  # "Null"
-            print("time:%s  current_price: %s hi:%s lo:%s" % (time.strftime('%Y/%m/%d,%H:%M:%S'), current_price, hi_price, lo_price), end="\r")
-            if self.get_last_open() < hi_price and current_price > hi_price + overshoot:
-                self.latest_dealedprice = self.execute_trade("buy", self.each_size * 1)
-                self.waitfor_position_match(orig_pos, self.each_size * 1)
-                self.execute_slide_computation(dealed_price=self.latest_dealedprice,
-                                               order_price=current_price,
-                                               type="buy")
-                return True
+            print("CP:%s hi:%s lo:%s" % (current_price, hi_price, lo_price), end="\r")
+            if self.get_last_close() < hi_price and current_price > hi_price + overshoot:
+                trade_volume = self.each_size * 1
+                self.latest_dealedprice = self.execute_trade("buy", trade_volume)
+                self.waitfor_position_match(orig_pos, trade_volume)
+                slide = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
+                                                       order_price=current_price,
+                                                       type="buy")
+                self.trade_log.append([self.latest_dealedprice, slide, trade_volume, "N->L"])
+                return False
 
-            elif self.get_last_open() > lo_price and current_price < lo_price - overshoot:
-                self.latest_dealedprice = self.execute_trade("sell", self.each_size * 1)
-                self.waitfor_position_match(orig_pos, -self.each_size * 1)
-                self.execute_slide_computation(dealed_price=self.latest_dealedprice,
-                                               order_price=current_price,
-                                               type="sell")
-                return True
+            elif self.get_last_close() > lo_price and current_price < lo_price - overshoot:
+                trade_volume = self.each_size * 1
+                self.latest_dealedprice = self.execute_trade("sell", trade_volume)
+                self.waitfor_position_match(orig_pos, -trade_volume)
+                slide = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
+                                                       order_price=current_price,
+                                                       type="sell")
+                self.trade_log.append([self.latest_dealedprice, slide, -trade_volume, "N->S"])
+                return False
 
             else:
                 pass
@@ -364,36 +459,47 @@ class Hilo:
         return False
 
     def candle_finish_process(self, hilo_price, close_price):
+        print("")
         print("candle_finish_process")
 
-        if not self.within_min_process:
+        if not self.within_candle_process:
             self.hilo_watcher(hilo_price, close_price, overshoot=0.)
         else:
             self.mdfy_position(hilo_price, close_price)
 
         self.update_mystatus_pos()
+        self.log.append(close_price[0])
+        self.log.append(self.my_status["position"])
+        self.log.append(self.my_status["rest"] + self.my_status["pnl"])
+        self.log.append(hilo_price)
+        self.log.extend(self.trade_log)
+        self.logger(self.log)
 
     def candle_within_process(self, hilo_price, current_price):
-        self.hilo_watcher(hilo_price, current_price)
+        return self.hilo_watcher(hilo_price, current_price)
 
-    def hilo_run_1min(self):
-        print("hilo_run_1min starts")
+    def hilo_run_1m(self):
+        print("hilo_run_1m starts")
         hilo_price = self.get_hilo_price(num=100, periods="1m")
         while True:
             NEXT_MIN = self.get_next_min()
+            self.log = []
+            self.trade_log = []
             print("############################################")
-            print("hilo_run_1min: %s" %time.strftime('%Y/%m/%d,%H:%M:%S'))
+            print("hilo_run_1m: %s" % time.strftime('%Y/%m/%d,%H:%M:%S'))
             print("############################################")
-            self.within_min_process = False
+            self.within_candle_process = False
+            self.log.append(time.strftime('%Y/%m/%d,%H:%M:%S'))
 
-            if self.get_kairi()>10. and abs(self.my_status["position"])<0.0005:
-                self.Go=False
+            if self.get_kairi() > 4.98 and abs(self.my_status["position"]) < 0.0005:
+                self.Go = False
 
             # within-min main loop
             while self.Go:
                 current_price = self.get_current_price()
-                if not self.within_min_process:
-                    self.within_min_process = self.candle_within_process(hilo_price, current_price)  # buy/sell at most once in one candle
+                if not self.within_candle_process:
+                    self.within_candle_process = self.candle_within_process(hilo_price,
+                                                                            current_price)  # buy/sell at most once in one candle
 
                 if time.time() > NEXT_MIN:
                     hilo_price = self.get_hilo_price(num=100, periods="1m")
@@ -404,17 +510,10 @@ class Hilo:
             time.sleep(0.5)
 
 
-
 if __name__ == '__main__':
     hilo = Hilo()
 
-    # hilo.hilo_run_1min()
-    order=hilo.get_last_order()
-    print(len(order))
-    print(order["average_price"])
+    hilo.hilo_run_1m()
 
     # kairi=hilo.get_kairi()
     # print(kairi)
-    
-    
-
