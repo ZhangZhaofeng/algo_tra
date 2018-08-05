@@ -57,6 +57,7 @@ class HILO:
                     final_unixtime_stamp=time.time(), num=num, periods=periods, converter=True)
                 break
             except:
+                time.sleep(0.5)
                 continue
 
         low_price_ma = self.get_short_price(low_price)

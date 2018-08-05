@@ -20,7 +20,7 @@ import smtplib
 
 class Hilo:
     def __init__(self):
-        print("hilo Algo 1Hin Starts")
+        print("hilo Algo 1Hour Starts")
         self.hilo = ohshc.HILO()
         # print(mytrade.get_asset_quoinex())
 
