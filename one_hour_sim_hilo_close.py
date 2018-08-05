@@ -56,7 +56,7 @@ class HILO:
                 (time_stamp, open_price, high_price, low_price, close_price) = self.btc_charts.get_price_array_till_finaltime(
                     final_unixtime_stamp=time.time(), num=num, periods=periods, converter=True)
                 break
-            except:
+            except Exception:
                 time.sleep(0.5)
                 continue
 
