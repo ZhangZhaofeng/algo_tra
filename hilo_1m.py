@@ -433,7 +433,11 @@ class Hilo:
                 pass
         elif abs(self.my_status["position"]) < 0.0005:  # "Null"
             print("CP:%s hi:%s lo:%s" % (current_price, hi_price, lo_price), end="\r")
-            if self.get_last_close() < hi_price and current_price > hi_price + overshoot:
+            if overshoot>0:
+                open_price=self.get_last_close()
+            else:
+                open_price=self.get_last_open()
+            if open_price < hi_price and current_price > hi_price + overshoot:
                 trade_volume = self.each_size * 1
                 self.latest_dealedprice = self.execute_trade("buy", trade_volume)
                 self.waitfor_position_match(orig_pos, trade_volume)
@@ -443,7 +447,7 @@ class Hilo:
                 self.trade_log.append([self.latest_dealedprice, slide, trade_volume, "N->L"])
                 return False
 
-            elif self.get_last_close() > lo_price and current_price < lo_price - overshoot:
+            elif open_price > lo_price and current_price < lo_price - overshoot:
                 trade_volume = self.each_size * 1
                 self.latest_dealedprice = self.execute_trade("sell", trade_volume)
                 self.waitfor_position_match(orig_pos, -trade_volume)
