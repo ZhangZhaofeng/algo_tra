@@ -287,7 +287,7 @@ class Hilo:
 
     def hilo_watcher(self, hilo_price, current_price, overshoot=2000):
         orig_pos = self.my_status["position"]
-        target_diff = [2500, 3500, 4500, 5500, 6500, 7500, 8500, 9500, 11000]
+        target_diff = [1500, 2500, 4000, 5500, 6500, 7500, 8500, 9500, 11000]
         buffer = 1000
         (hi_price, lo_price) = hilo_price
         # print("open=%s" % current_price)
