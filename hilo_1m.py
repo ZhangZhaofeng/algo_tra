@@ -516,8 +516,10 @@ class Hilo:
 
 if __name__ == '__main__':
     hilo = Hilo()
-
-    hilo.hilo_run_1m()
-
-    # kairi=hilo.get_kairi()
-    # print(kairi)
+    while True:
+        try:
+            hilo.hilo_run_1m()
+            time.sleep(0.5)
+        except Exception:
+            time.sleep(0.5)
+            continue
