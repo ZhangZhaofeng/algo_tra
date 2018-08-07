@@ -285,9 +285,9 @@ class Hilo:
                 self.trade_log.append([self.latest_dealedprice, slide, trade_volume, "F s->l"])
                 print("Fake short -> long")
 
-    def hilo_watcher(self, hilo_price, current_price, overshoot=2000):
+    def hilo_watcher(self, hilo_price, current_price, overshoot=400):
         orig_pos = self.my_status["position"]
-        target_diff = [1500, 2500, 4000, 5500, 6500, 7500, 8500, 9500, 11000]
+        target_diff = [1500, 2500, 3500, 4500, 5500, 6500, 7500, 9000, 11000]
         buffer = 1000
         (hi_price, lo_price) = hilo_price
         # print("open=%s" % current_price)
@@ -329,11 +329,11 @@ class Hilo:
                     self.trade_log.append([self.latest_dealedprice, slide1,slide2, -trade_volume, note])
                     self.profit_hi = 0.0
                     self.flag = 0
-                    return True
+                    return False
 
 
             elif current_price - self.latest_dealedprice > target_diff[0] and self.flag == 0:
-                self.profit_hi = self.latest_dealedprice + target_diff[0] - 1500
+                self.profit_hi = self.latest_dealedprice + target_diff[0] - 700
                 self.flag = 1
             elif current_price - self.latest_dealedprice > target_diff[1] and self.flag == 1:
                 self.profit_hi = self.latest_dealedprice + target_diff[1] - buffer
@@ -398,12 +398,12 @@ class Hilo:
                     self.trade_log.append([self.latest_dealedprice, slide1, slide2, trade_volume, note])
                     self.profit_lo = 9990000
                     self.flag = 0
-                    return True
+                    return False
 
 
 
             elif self.latest_dealedprice - current_price > target_diff[0] and self.flag == 0:
-                self.profit_lo = self.latest_dealedprice - target_diff[0] + 1500
+                self.profit_lo = self.latest_dealedprice - target_diff[0] + 700
                 self.flag = 1
             elif self.latest_dealedprice - current_price > target_diff[1] and self.flag == 1:
                 self.profit_lo = self.latest_dealedprice - target_diff[1] + buffer
