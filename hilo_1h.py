@@ -295,6 +295,10 @@ class Hilo:
             print("CP:%s lo= %s pro_hi= %s" % (current_price, lo_price, self.profit_hi), end="\r")
             if current_price < max([lo_price- overshoot, self.profit_hi]) :
                 if current_price < lo_price - overshoot:
+                    if self.change_pos_within_one_hour:
+                        return False
+
+
                     trade_volume = self.each_size * 2
                     note = "L->S"
 
@@ -308,6 +312,7 @@ class Hilo:
                                                            type="sell")
                     self.trade_log.append([self.latest_dealedprice, slide1,slide2, -trade_volume, note])
                     self.profit_hi = 0.0
+                    self.change_pos_within_one_hour=1
                     self.flag = 0
                     return True
                 elif current_price < self.latest_dealedprice-1500 and self.flag == 1:
@@ -366,6 +371,9 @@ class Hilo:
             print("CP:%s hi:%s pro_lo=%s" % (current_price, hi_price, self.profit_lo), end="\r")
             if current_price > min([hi_price+ overshoot, self.profit_lo]) :
                 if current_price > hi_price + overshoot:
+                    if self.change_pos_within_one_hour:
+                        return False
+
                     trade_volume = self.each_size * 2
                     note = "S->L"
                     self.latest_dealedprice = self.execute_trade("buy", trade_volume)
@@ -378,8 +386,9 @@ class Hilo:
                                                            type="buy")
                     self.trade_log.append([self.latest_dealedprice, slide1, slide2, trade_volume, note])
                     self.profit_lo = 9990000
+                    self.change_pos_within_one_hour = 1
                     self.flag = 0
-                    return True
+                    return False
                 elif current_price>self.profit_lo+1500 and self.flag == 1:
                     print("Price volatility too large -> pro_lo reset")
                     self.profit_lo = 9990000
@@ -464,6 +473,7 @@ class Hilo:
         print("candle_finish_process")
 
         if not self.within_candle_process:
+            self.change_pos_within_one_hour=0
             self.hilo_watcher(hilo_price, close_price, overshoot=0.)
         else:
             self.mdfy_position(hilo_price, close_price)
@@ -486,10 +496,11 @@ class Hilo:
             NEXT_HOUR = self.get_next_hour()
             self.log = []
             self.trade_log = []
+            self.within_candle_process = False
+            self.change_pos_within_one_hour = 0
             print("############################################")
             print("hilo_run_1h: %s" % time.strftime('%Y/%m/%d,%H:%M:%S'))
             print("############################################")
-            self.within_candle_process = False
             self.log.append(time.strftime('%Y/%m/%d,%H:%M:%S'))
 
             if self.get_kairi() > 10. and abs(self.my_status["position"]) < 0.0005:
@@ -519,6 +530,7 @@ if __name__ == '__main__':
             time.sleep(0.5)
         except Exception:
             time.sleep(0.5)
+            raise Exception
             continue
         
     # kairi=hilo.get_kairi()
