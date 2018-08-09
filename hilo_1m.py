@@ -285,9 +285,9 @@ class Hilo:
                 self.trade_log.append([self.latest_dealedprice, slide, trade_volume, "F s->l"])
                 print("Fake short -> long")
 
-    def hilo_watcher(self, hilo_price, current_price, overshoot=400):
+    def hilo_watcher(self, hilo_price, current_price, overshoot=800):
         orig_pos = self.my_status["position"]
-        target_diff = [1500, 2500, 3500, 4500, 5500, 6500, 7500, 9000, 11000]
+        target_diff = [1200, 2500, 3500, 4500, 5500, 6500, 7500, 9000, 11000]
         buffer = 1000
         (hi_price, lo_price) = hilo_price
         # print("open=%s" % current_price)

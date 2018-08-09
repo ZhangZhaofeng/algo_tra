@@ -329,7 +329,7 @@ class Hilo:
                     self.trade_log.append([self.latest_dealedprice, slide1,slide2, -trade_volume, note])
                     self.profit_hi = 0.0
                     self.flag = 0
-                    return True
+                    return False
 
 
 
@@ -399,7 +399,7 @@ class Hilo:
                     self.trade_log.append([self.latest_dealedprice, slide1, slide2, trade_volume, note])
                     self.profit_lo = 9990000
                     self.flag = 0
-                    return True
+                    return False
 
 
 
@@ -513,8 +513,13 @@ class Hilo:
 
 if __name__ == '__main__':
     hilo = Hilo()
-
-    hilo.hilo_run_1h()
-
+    while 1: 
+        try:
+            hilo.hilo_run_1h()
+            time.sleep(0.5)
+        except Exception:
+            time.sleep(0.5)
+            continue
+        
     # kairi=hilo.get_kairi()
     # print(kairi)
