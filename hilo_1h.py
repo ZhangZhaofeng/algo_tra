@@ -163,7 +163,7 @@ class Hilo:
 
     # can be called at any time within current hour
     def get_next_hour(self):
-        next_hour = dt.datetime.fromtimestamp(time.time() - time.time() % 3600 + 3601)
+        next_hour = dt.datetime.fromtimestamp(time.time() - time.time() % 3600 + 3605)
         return next_hour.timestamp()
 
     # can be called at any time within current min
@@ -233,7 +233,12 @@ class Hilo:
         return (hi, lo)
 
     def get_last_open_close(self, periods="1H"):
-        return self.hilo.get_last_open_close(periods=periods)
+        while 1:
+            try:
+                (open,close)= self.hilo.get_last_open_close(periods=periods)
+                return open,close
+            except Exception:
+                continue
 
     def get_last_open(self, periods="1H"):
         (last_open, last_close) = self.get_last_open_close(periods=periods)
