@@ -44,11 +44,15 @@ class HILO:
         return ma_low
 
     def get_last_open_close(self, num=100, periods="1H"):
-        (time_stamp, open_price, high_price, low_price, close_price) = self.btc_charts.get_price_array_till_finaltime(
-            final_unixtime_stamp=time.time(), num=num, periods=periods, converter=True)
-        last_open = open_price[-1]
-        last_close = close_price[-1]
-        return (last_open,last_close)
+        while 1:
+            try:
+                (time_stamp, open_price, high_price, low_price, close_price) = self.btc_charts.get_price_array_till_finaltime(final_unixtime_stamp=time.time(), num=num, periods=periods, converter=True)
+                last_open = open_price[-1]
+                last_close = close_price[-1]
+                return (last_open,last_close)
+            except Exception:
+                time.sleep(1)
+                continue
 
     def publish_current_hilo_price(self, num=100, periods="1H"):
         while 1:
