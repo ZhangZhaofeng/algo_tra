@@ -290,7 +290,7 @@ class Hilo:
                 self.trade_log.append([self.latest_dealedprice, slide, trade_volume, "F s->l"])
                 print("Fake short -> long")
 
-    def hilo_watcher(self, hilo_price, current_price, overshoot=2000):
+    def hilo_watcher(self, hilo_price, current_price, close_cur, overshoot=2500):
         orig_pos = self.my_status["position"]
         target_diff = [4000, 6000, 8000, 10000, 12000, 14000, 16000, 18000, 20000]
         buffer = 3000
@@ -448,7 +448,7 @@ class Hilo:
                 pass
         elif abs(self.my_status["position"]) < 0.0005:  # "Null"
             print("CP:%s hi:%s lo:%s" % (current_price, hi_price, lo_price), end="\r")
-            if self.get_last_close() < hi_price and current_price > hi_price + overshoot:
+            if close_cur < hi_price and current_price > hi_price + overshoot:
                 trade_volume = self.each_size * 1
                 self.latest_dealedprice = self.execute_trade("buy", trade_volume)
                 self.waitfor_position_match(orig_pos, trade_volume)
@@ -458,7 +458,7 @@ class Hilo:
                 self.trade_log.append([self.latest_dealedprice, slide, trade_volume, "N->L"])
                 return False
 
-            elif self.get_last_close() > lo_price and current_price < lo_price - overshoot:
+            elif close_cur > lo_price and current_price < lo_price - overshoot:
                 trade_volume = self.each_size * 1
                 self.latest_dealedprice = self.execute_trade("sell", trade_volume)
                 self.waitfor_position_match(orig_pos, -trade_volume)
@@ -491,12 +491,13 @@ class Hilo:
         self.log.extend(self.trade_log)
         self.logger(self.log)
 
-    def candle_within_process(self, hilo_price, current_price):
-        return self.hilo_watcher(hilo_price, current_price)
+    def candle_within_process(self, hilo_price, current_price, close):
+        return self.hilo_watcher(hilo_price, current_price, close)
 
     def hilo_run_1h(self):
         print("hilo_run_1h starts")
         hilo_price = self.get_hilo_price(num=100, periods="1H")
+        close_price = self.get_last_close()
         while True:
             NEXT_HOUR = self.get_next_hour()
             self.log = []
@@ -516,7 +517,7 @@ class Hilo:
                 current_price = self.get_current_price()
                 if not self.within_candle_process:
                     self.within_candle_process = self.candle_within_process(hilo_price,
-                                                                            current_price)  # buy/sell at most once in one candle
+                                                                            current_price,close_price)  # buy/sell at most once in one candle
 
                 if time.time() > NEXT_HOUR:
                     hilo_price = self.get_hilo_price(num=100, periods="1H")
@@ -525,6 +526,7 @@ class Hilo:
                     break
                 time.sleep(0.5)
             time.sleep(0.5)
+
 
 
 if __name__ == '__main__':
