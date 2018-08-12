@@ -479,9 +479,9 @@ class Hilo:
 
         if not self.within_candle_process:
             self.change_pos_within_one_hour=0
-            self.hilo_watcher(hilo_price, close_price, overshoot=0.)
+            self.hilo_watcher(hilo_price, close_price, close_price ,overshoot=0.)
         else:
-            self.mdfy_position(hilo_price, close_price)
+            self.mdfy_position(hilo_price, close_price, close_price)
 
         self.update_mystatus_pos()
         self.log.append(close_price[0])
