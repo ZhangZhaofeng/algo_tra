@@ -143,7 +143,7 @@ class Hilo:
 
         return (math.floor(cur_price))
 
-    def get_current_price(self,num=3, product_code='FX_BTC_JPY'):
+    def get_current_price(self,num=50, product_code='FX_BTC_JPY'):
         price=self.get_unchecked_price(num, product_code)
         while price<1.0:
             print("Getting price again")
@@ -481,7 +481,7 @@ class Hilo:
             self.change_pos_within_one_hour=0
             self.hilo_watcher(hilo_price, close_price, close_price ,overshoot=0.)
         else:
-            self.mdfy_position(hilo_price, close_price, close_price)
+            self.mdfy_position(hilo_price, close_price)
 
         self.update_mystatus_pos()
         self.log.append(close_price[0])
