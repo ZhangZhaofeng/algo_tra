@@ -95,7 +95,7 @@ class Hilo:
         print("execute_trade:%s" % type)
         i = 0
         try_times_limit = 30
-
+        amount=round(amount,2)
         while i < try_times_limit:
             try:
                 i += 1
