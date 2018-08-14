@@ -319,7 +319,7 @@ class Hilo:
                     self.profit_hi = 0.0
                     self.change_pos_within_one_hour=1
                     self.flag = 0
-                    return True
+                    return False
                 elif current_price < self.latest_dealedprice-1500 and self.flag == 1:
                     print("Price volatility too large -> pro_hi reset")
                     self.profit_hi = 0.0
