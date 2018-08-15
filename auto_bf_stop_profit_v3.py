@@ -5,7 +5,7 @@ import datetime
 import predict
 import configIO
 import sys
-import technical_fx_hilo
+import technical_fx_turtle
 import math
 
 from email.mime.text import MIMEText
@@ -154,7 +154,7 @@ class AutoTrading:
         i = 0
         while i < 30:
             try:
-                hilos = technical_fx_hilo.HILO()
+                hilos = technical_fx_turtle.HILO()
                 result = hilos.publish_current_hilo_price()
         # result = prediction.publish_current_limit_price(periods="1H")
                 sell = float(result[1])
