@@ -272,23 +272,23 @@ class Hilo:
 
     def mdfy_position(self, hilo, close_price):
         (hi_price, lo_price) = hilo
-        trade_volume = self.each_size * 2
+        trade_volume = self.each_size * 1
         orig_pos = self.my_status["position"]
         if self.my_status["position"] > 0.0005:  # current long position
             if close_price < hi_price:
                 self.latest_dealedprice = self.execute_trade("sell", trade_volume)
                 self.waitfor_position_match(orig_pos, -trade_volume)
                 slide = self.execute_slide_computation(self.latest_dealedprice, close_price, "sell")
-                self.trade_log.append([self.latest_dealedprice, slide, -trade_volume, "F l->s"])
-                print("Fake long -> short")
+                self.trade_log.append([self.latest_dealedprice, slide, -trade_volume, "F l->n"])
+                print("Fake long -> none")
 
         elif self.my_status["position"] < -0.0005:  # current short position
             if close_price > lo_price:
                 self.latest_dealedprice = self.execute_trade("buy", trade_volume)
                 self.waitfor_position_match(orig_pos, trade_volume)
                 slide = self.execute_slide_computation(self.latest_dealedprice, close_price, "buy")
-                self.trade_log.append([self.latest_dealedprice, slide, trade_volume, "F s->l"])
-                print("Fake short -> long")
+                self.trade_log.append([self.latest_dealedprice, slide, trade_volume, "F s->n"])
+                print("Fake short -> none")
 
     def hilo_watcher(self, hilo_price, current_price, close_cur, overshoot=2500):
         orig_pos = self.my_status["position"]
