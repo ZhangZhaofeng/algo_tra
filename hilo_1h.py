@@ -143,7 +143,7 @@ class Hilo:
 
         return (math.floor(cur_price))
 
-    def get_current_price(self,num=50, product_code='FX_BTC_JPY'):
+    def get_current_price(self,num=3, product_code='FX_BTC_JPY'):
         price=self.get_unchecked_price(num, product_code)
         while price<1.0:
             print("Getting price again")
@@ -304,8 +304,8 @@ class Hilo:
                         return False
 
 
-                    trade_volume = self.each_size * 2
-                    note = "L->S"
+                    trade_volume = self.each_size * 1
+                    note = "L->NN"
 
                     self.latest_dealedprice = self.execute_trade("sell", trade_volume)
                     self.waitfor_position_match(orig_pos, -trade_volume)
@@ -379,8 +379,8 @@ class Hilo:
                     if self.change_pos_within_one_hour:
                         return False
 
-                    trade_volume = self.each_size * 2
-                    note = "S->L"
+                    trade_volume = self.each_size * 1
+                    note = "S->NN"
                     self.latest_dealedprice = self.execute_trade("buy", trade_volume)
                     self.waitfor_position_match(orig_pos, trade_volume)
                     slide1 = self.execute_slide_computation(dealed_price=self.latest_dealedprice,
@@ -477,7 +477,7 @@ class Hilo:
         print("")
         print("candle_finish_process")
 
-        if not self.within_candle_process:
+        if not self.change_pos_within_one_hour:
             self.change_pos_within_one_hour=0
             self.hilo_watcher(hilo_price, close_price, close_price ,overshoot=0.)
         else:
