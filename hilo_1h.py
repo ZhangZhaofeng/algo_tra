@@ -303,9 +303,9 @@ class Hilo:
                 self.trade_log.append([self.latest_dealedprice, slide, trade_volume, "F s->n"])
                 print("Fake short -> none")
 
-    def hilo_watcher(self, hilo_price, current_price, close_cur, overshoot=2500):
+    def hilo_watcher(self, hilo_price, current_price, close_cur, overshoot=1500):
         orig_pos = self.my_status["position"]
-        target_diff = [4000, 6000, 8000, 10000, 12000, 14000, 16000, 18000, 20000]
+        target_diff = [1000, 2000, 3000, 4000, 6000, 9000, 12000, 15000, 20000]
         buffer = 3000
         (hi_price, lo_price) = hilo_price
         # print("open=%s" % current_price)
@@ -357,16 +357,16 @@ class Hilo:
 
 
             elif current_price - self.latest_dealedprice > target_diff[0] and self.flag == 0:
-                self.profit_hi = self.latest_dealedprice + target_diff[0] - 1500
+                self.profit_hi = self.latest_dealedprice #+ target_diff[0] - buffer
                 self.flag = 1
             elif current_price - self.latest_dealedprice > target_diff[1] and self.flag == 1:
-                self.profit_hi = self.latest_dealedprice + target_diff[1] - buffer
+                self.profit_hi = self.latest_dealedprice + target_diff[1]*0.2
                 self.flag = 2
             elif current_price - self.latest_dealedprice > target_diff[2] and self.flag == 2:
-                self.profit_hi = self.latest_dealedprice + target_diff[2] - buffer
+                self.profit_hi = self.latest_dealedprice + target_diff[2]*0.2
                 self.flag = 3
             elif current_price - self.latest_dealedprice > target_diff[3] and self.flag == 3:
-                self.profit_hi = self.latest_dealedprice + target_diff[3] - buffer
+                self.profit_hi = self.latest_dealedprice + target_diff[3]*0.2
                 self.flag = 4
             elif current_price - self.latest_dealedprice > target_diff[4] and self.flag == 4:
                 self.profit_hi = self.latest_dealedprice + target_diff[4] - buffer
@@ -431,16 +431,16 @@ class Hilo:
 
 
             elif self.latest_dealedprice - current_price > target_diff[0] and self.flag == 0:
-                self.profit_lo = self.latest_dealedprice - target_diff[0] + 1500
+                self.profit_lo = self.latest_dealedprice # - target_diff[0] + 1500
                 self.flag = 1
             elif self.latest_dealedprice - current_price > target_diff[1] and self.flag == 1:
-                self.profit_lo = self.latest_dealedprice - target_diff[1] + buffer
+                self.profit_lo = self.latest_dealedprice - target_diff[1]*0.2
                 self.flag = 2
             elif self.latest_dealedprice - current_price > target_diff[2] and self.flag == 2:
-                self.profit_lo = self.latest_dealedprice - target_diff[2] + buffer
+                self.profit_lo = self.latest_dealedprice - target_diff[2]*0.2
                 self.flag = 3
             elif self.latest_dealedprice - current_price > target_diff[3] and self.flag == 3:
-                self.profit_lo = self.latest_dealedprice - target_diff[3] + buffer
+                self.profit_lo = self.latest_dealedprice - target_diff[3]*0.2
                 self.flag = 4
             elif self.latest_dealedprice - current_price > target_diff[4] and self.flag == 4:
                 self.profit_lo = self.latest_dealedprice - target_diff[4] + buffer
