@@ -53,8 +53,21 @@ class Hilo:
             if len(order)>0:
                 print("latest_dealedprice updated")
                 self.latest_dealedprice=order["average_price"]
+                
+    # deal with maintenance time
+    def maintenance_time(self):
+        while 1:
+            cur_oclock = int(time.strftime('%H:')[0:-1])
+            cur_min = int(time.strftime('%M:')[0:-1])
+            if (cur_oclock == 4 and cur_min >= 0 and cur_min <= 12) or (cur_oclock == 3 and cur_min >= 58):
+                predict.print_and_write('Server maintenance')
+                time.sleep(60)
+                continue
+            else:
+                return
 
     def trade_bitflyer_fx(self, type, amount=0.01):
+        self.maintenance_time()
         print("trade bitflyer_fx")
         if type == "BUY" or type == "buy":
             order = self.bitflyer_api.sendchildorder(product_code="FX_BTC_JPY",
