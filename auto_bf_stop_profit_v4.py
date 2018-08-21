@@ -364,6 +364,12 @@ class AutoTrading:
                 profit = checkins[0] - cur_price
             if profit > max_profit:
                 max_profit = profit
+                if max_profit > trial_loss_cut * 2:
+                    trial_loss_cut = max_profit /2
+                if trial_loss_cut > 10000:
+                    trial_loss_cut = 10000
+
+
             tdelta2 = self.bf_timejudge(starttime)
             dt = tdelta2 - tdelta
 
@@ -378,19 +384,15 @@ class AutoTrading:
                     order = self.trade_market('buy', trade_mount, int(cur_price))
                     predict.print_and_write(order)
 
-                predict.print_and_write('Quit position, assumption profit: %.2f, order time last: %d'%(profit, dt))
+                predict.print_and_write('Quit position ,profit: %.2f, time: %d'%(profit, dt))
 
                 return
 
             elif profit >= pre_profit and profit > 0:
-                if max_profit > trial_loss_cut * 2:
-                    trial_loss_cut = max_profit /2
-                    if trial_loss_cut > 10000:
-                        trial_loss_cut = 10000
                 temp_pre_profit = profit - trial_loss_cut
                 if temp_pre_profit > pre_profit:
                     pre_profit = temp_pre_profit
-            print('T: %d, Profit: %.0f, Max Profit: %.0f, Losscut Profit: %.0f' %(dt, profit, max_profit, pre_profit), end='\r')
+            print('T: %d, Profit: %5.0f, Max Profit: %5.0f, Losscut Profit: %5.0f' %(dt, profit, max_profit, pre_profit), end='\r')
             time.sleep(0.8)
             #tdelta = self.bf_timejudge(starttime)
 
