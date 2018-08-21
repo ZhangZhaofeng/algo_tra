@@ -46,7 +46,6 @@ class SendMail:
 
 class AutoTrading:
 
-    switch_in_hour = False # if true, will be waiting for inhour position change
     order_id = ''
     ovrshoot = 2200
     init_trade_amount = 0.01
@@ -303,13 +302,14 @@ class AutoTrading:
     # detect the profit
     # following profit ever 1 min, if profit is starting to reduce , quite (need a trial order)
     def trade_in_hour(self, starttime, hilo):
+        self.get_collateral()
         checkins = self.get_checkin_price()
         checkin_price = checkins[0]
         position0 =  abs(float('%.2f' % (checkins[1])))
         predict.print_and_write('Check in price: %f, position: %f' % (checkin_price, position0))
 
         tdelta = self.bf_timejudge(starttime)
-        trial_loss_cut = 1500
+        trial_loss_cut = 2000
         #switch_line = math.floor((hilo[1] + hilo[0]) /2)
 
         while tdelta < 3600:
@@ -322,7 +322,7 @@ class AutoTrading:
 
             elif position0 == 0.0:
             # if we have a positive position, detect a change to quit and switch
-                predict.print_and_write('Detecting a chance to get in')
+                predict.print_and_write('Detecting a chance')
                 result = self.judge_overshoot(hilo, starttime)
                 if result == 'long':
                     order = self.trade_market('buy', self.init_trade_amount, int(hilo[1] + self.ovrshoot))
@@ -419,6 +419,7 @@ class AutoTrading:
         time.sleep(1)
         starttime = time.gmtime(self.get_curhour())
         cur_price = self.get_current_price(100)
+        predict.print_and_write('##################################################')
         predict.print_and_write('Start a new hour: Current price: %f' % (cur_price))
         hilo = self.get_hilo()
 
@@ -458,7 +459,7 @@ if __name__ == '__main__':
     try_times = 20
     while 1:
         autoTrading.judge_condition()
-        autoTrading.get_collateral()
+        #autoTrading.get_collateral()
 
     #tdelta = autoTrading.bf_timejudge('2018-05-21T14:35:44.713')
     # while try_times > 0:
