@@ -47,7 +47,7 @@ class SendMail:
 class AutoTrading:
 
     order_id = ''
-    ovrshoot = 2200
+    ovrshoot = 1500
     init_trade_amount = 0.01
     last_profit = 0
 
@@ -338,7 +338,7 @@ class AutoTrading:
                     checkins = self.judge_position(suggest_position)
                     self.trial_order(checkins, trial_loss_cut, starttime)
 
-            time.sleep(60)
+            time.sleep(10)
             tdelta = self.bf_timejudge(starttime)
             checkins = self.get_checkin_price()
             checkin_price = checkins[0]
