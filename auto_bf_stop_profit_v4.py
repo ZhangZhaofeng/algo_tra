@@ -353,7 +353,7 @@ class AutoTrading:
         profit = 0
         max_profit = 0
         pre_profit = -trial_loss_cut
-        #tdelta = self.bf_timejudge(starttime)
+        tdelta = self.bf_timejudge(starttime)
         predict.print_and_write('Use a trial order')
         #predict.print_and_write('Current position: %f, price: %f' % (checkins[1], checkins[0]))
         while 1: #tdelta<3600
@@ -364,6 +364,8 @@ class AutoTrading:
                 profit = checkins[0] - cur_price
             if profit > max_profit:
                 max_profit = profit
+            tdelta2 = self.bf_timejudge(starttime)
+            dt = tdelta2 - tdelta
 
             if profit < pre_profit:
                 # quit
@@ -375,19 +377,20 @@ class AutoTrading:
                     trade_mount = '%.2f' % abs(checkins[1])
                     order = self.trade_market('buy', trade_mount, int(cur_price))
                     predict.print_and_write(order)
-                predict.print_and_write('Quit position')
-                tdelta = self.bf_timejudge(starttime)
+
+                predict.print_and_write('Quit position, assumption profit: %.2f, order time last: dt'%(profit, dt))
+
                 return
 
             elif profit >= pre_profit and profit > 0:
-                if max_profit > trial_loss_cut * 3:
-                    trial_loss_cut = max_profit /3
+                if max_profit > trial_loss_cut * 2:
+                    trial_loss_cut = max_profit /2
                     if trial_loss_cut > 10000:
                         trial_loss_cut = 10000
                 temp_pre_profit = profit - trial_loss_cut
                 if temp_pre_profit > pre_profit:
                     pre_profit = temp_pre_profit
-            print('Profit: %.0f, Max Profit: %.0f, Losscut Profit: %.0f' %(profit, max_profit, pre_profit), end='\r')
+            print('T: %d, Profit: %.0f, Max Profit: %.0f, Losscut Profit: %.0f' %(dt, profit, max_profit, pre_profit), end='\r')
             time.sleep(0.8)
             #tdelta = self.bf_timejudge(starttime)
 
