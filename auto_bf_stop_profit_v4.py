@@ -48,11 +48,8 @@ class AutoTrading:
 
     switch_in_hour = False # if true, will be waiting for inhour position change
     order_id = ''
-    ovrshoot = 1500
+    ovrshoot = 2200
     init_trade_amount = 0.01
-    stop_loss_factor = 0.015
-    stop_profit_factor = 0.66
-    minize_stop_profit = 3000
     last_profit = 0
 
     def __init__(self):
@@ -82,7 +79,7 @@ class AutoTrading:
             else:
                 print("error!")
             if 'child_order_acceptance_id' in order:
-                time.sleep(2)
+                time.sleep(10)
                 execute_price = self.get_execute_order()
                 if execute_price != 0:
                     if type == "SELL" or type == "sell":
@@ -96,7 +93,7 @@ class AutoTrading:
                 try_t += 1
                 print(order)
                 print('Failed, try again')
-                time.sleep(20)
+                time.sleep(10)
 
 
     # deal with maintance time
