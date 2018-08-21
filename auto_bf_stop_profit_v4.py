@@ -378,7 +378,7 @@ class AutoTrading:
                     order = self.trade_market('buy', trade_mount, int(cur_price))
                     predict.print_and_write(order)
 
-                predict.print_and_write('Quit position, assumption profit: %.2f, order time last: dt'%(profit, dt))
+                predict.print_and_write('Quit position, assumption profit: %.2f, order time last: %d'%(profit, dt))
 
                 return
 
