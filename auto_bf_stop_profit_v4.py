@@ -340,7 +340,8 @@ class AutoTrading:
 
             time.sleep(10)
             tdelta = self.bf_timejudge(starttime)
-            checkins = self.get_checkin_price()
+            suggest_position = 0.0
+            checkins = self.judge_position(suggest_position)
             checkin_price = checkins[0]
             position0 = abs(float('%.2f' % (checkins[1])))
 
