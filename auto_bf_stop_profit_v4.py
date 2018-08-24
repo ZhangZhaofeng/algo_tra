@@ -5,7 +5,7 @@ import datetime
 import predict
 import configIO
 import sys
-import technical_fx_hilo
+import technical_fx_hilo2
 import math
 
 from email.mime.text import MIMEText
@@ -48,7 +48,7 @@ class AutoTrading:
 
     order_id = ''
     ovrshoot = 1500
-    init_trade_amount = 0.01
+    init_trade_amount = 0.05
     last_profit = 0
 
     def __init__(self):
@@ -151,7 +151,7 @@ class AutoTrading:
         i = 0
         while i < 30:
             try:
-                hilos = technical_fx_hilo.HILO()
+                hilos = technical_fx_hilo2.HILO()
                 result = hilos.publish_current_hilo_price()
         # result = prediction.publish_current_limit_price(periods="1H")
                 sell = float(result[1])
@@ -163,6 +163,21 @@ class AutoTrading:
                 predict.print_and_write('Try to get hilo again')
                 time.sleep(10)
                 i+=1
+                continue
+
+    def get_ATR(self):
+        i = 0
+        while i < 30:
+            try:
+                atrs = technical_fx_hilo2.HILO()
+                result = atrs.getATR()
+                # result = prediction.publish_current_limit_price(periods="1H")
+                return (result)
+            except Exception:
+                print(Exception)
+                predict.print_and_write('Try to get atr again')
+                time.sleep(10)
+                i += 1
                 continue
 
     def get_orders(self, status = ''):
@@ -301,7 +316,7 @@ class AutoTrading:
     # if position changed
     # detect the profit
     # following profit ever 1 min, if profit is starting to reduce , quite (need a trial order)
-    def trade_in_hour(self, starttime, hilo):
+    def trade_in_hour(self, starttime, hilo, atr):
         self.get_collateral()
         checkins = self.get_checkin_price()
         checkin_price = checkins[0]
@@ -309,8 +324,14 @@ class AutoTrading:
         predict.print_and_write('Check in price: %f, position: %f' % (checkin_price, position0))
 
         tdelta = self.bf_timejudge(starttime)
-        trial_loss_cut = 2000
+        predict.print_and_write('hi: %f, lo: %f, atr: %f' % (hilo[0], hilo[1], atr))
+        if atr > abs(hilo[0] - hilo[1]):
+            atr = abs(hilo[0] - hilo[1])
+            predict.print_and_write('atr is change to dis of hilo: %f'%(atr))
+
+        trial_loss_cut = atr * 1.2
         #switch_line = math.floor((hilo[1] + hilo[0]) /2)
+
 
         while tdelta < 3600:
 
@@ -351,6 +372,7 @@ class AutoTrading:
         profit = 0
         max_profit = 0
         pre_profit = -trial_loss_cut
+        atr = trial_loss_cut
         tdelta = self.bf_timejudge(starttime)
         predict.print_and_write('Use a trial order')
         #predict.print_and_write('Current position: %f, price: %f' % (checkins[1], checkins[0]))
@@ -362,7 +384,9 @@ class AutoTrading:
                 profit = checkins[0] - cur_price
             if profit > max_profit:
                 max_profit = profit
-                if max_profit > trial_loss_cut * 2:
+                if max_profit > atr * 0.5 and max_profit < atr * 2:
+                    trial_loss_cut = atr * 0.5
+                if max_profit >= atr * 2:
                     trial_loss_cut = max_profit /2
                 if trial_loss_cut > 10000:
                     trial_loss_cut = 10000
@@ -423,8 +447,9 @@ class AutoTrading:
         predict.print_and_write('##################################################')
         predict.print_and_write('Start a new hour: Current price: %f' % (cur_price))
         hilo = self.get_hilo()
-
-        self.trade_in_hour(starttime, hilo)
+        time.sleep(1)
+        atr = self.get_ATR()
+        self.trade_in_hour(starttime, hilo, atr)
 
 
     def get_collateral(self):
