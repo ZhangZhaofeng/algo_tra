@@ -390,8 +390,8 @@ class AutoTrading:
                     trial_loss_cut = atr
                 elif max_profit >= atr * 2:
                     trial_loss_cut = max_profit /2
-                if trial_loss_cut > 10000:
-                    trial_loss_cut = 10000
+                if trial_loss_cut > 15000:
+                    trial_loss_cut = 15000
 
 
             tdelta2 = self.bf_timejudge(starttime)
