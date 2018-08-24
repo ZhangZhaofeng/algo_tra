@@ -384,9 +384,11 @@ class AutoTrading:
                 profit = checkins[0] - cur_price
             if profit > max_profit:
                 max_profit = profit
-                if max_profit > atr * 0.5 and max_profit < atr * 2:
+                if max_profit > atr * 0.5 and max_profit < atr:
                     trial_loss_cut = atr * 0.5
-                if max_profit >= atr * 2:
+                elif max_profit >= atr and max_profit< atr * 2:
+                    trial_loss_cut = atr
+                elif max_profit >= atr * 2:
                     trial_loss_cut = max_profit /2
                 if trial_loss_cut > 10000:
                     trial_loss_cut = 10000
