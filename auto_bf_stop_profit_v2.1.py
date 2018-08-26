@@ -163,6 +163,8 @@ class AutoTrading:
                 sell = float(result[1])
                 buy = float(result[0])
                 close = float(result[2])  # the close price of last hour
+                high = float(result[3])
+                low =float(result[4])
                 return([sell, buy, close])
             except Exception:
                 print(Exception)
