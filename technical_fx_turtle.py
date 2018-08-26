@@ -53,5 +53,5 @@ class HILO:
         (buyprice, sellprice)=(high_price_ma[-2][0],low_price_ma[-2][0])
         a=(int(buyprice), int(sellprice))
         #print(a)
-        return (int(buyprice), int(sellprice), int(close_price[-1]))
+        return (int(buyprice), int(sellprice), int(close_price[-1]), int(high_price[-1]), int(low_price[-1]))
 
