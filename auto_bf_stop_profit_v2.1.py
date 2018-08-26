@@ -360,7 +360,7 @@ class AutoTrading:
                 predict.print_and_write(
                     'Init loss cut line: %.0f' % (
                         self.loss_cut_line))
-        predict.print_and_write('Profit: %.0f'%profit)
+        predict.print_and_write('Max profit in last hour: %.0f'%profit)
 
         if profit > self.max_profit:
             self.max_profit = profit
@@ -613,6 +613,7 @@ class AutoTrading:
         atr = round(float(self.get_ATR()),0)
 
 
+
         # if keep a position and transfor in this hour. ckeck position again:
         if (checkins[1] != 0.0 and self.switch_in_hour) or checkins[1] == 0.0:
             if checkins[1] == 0.0:
@@ -626,7 +627,12 @@ class AutoTrading:
             checkins = self.judge_position(suggest_position)
             #order = self.update_order(checkins, hilo)
         if checkins[1] != 0.0:
-            self.get_stop_acc_line(atr, checkins, cur_price)
+            if checkins[1] > 0.0:
+                last_peak = hilo[3]
+                self.get_stop_acc_line(atr, checkins, last_peak)
+            else:
+                last_peak = hilo[4]
+                self.get_stop_acc_line(atr, checkins, last_peak)
 
         self.trade_in_hour(suggest_position, starttime, hilo, atr)
         # elif checkins[1] != 0.0 and not self.switch_in_hour:
