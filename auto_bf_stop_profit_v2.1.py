@@ -165,7 +165,7 @@ class AutoTrading:
                 close = float(result[2])  # the close price of last hour
                 high = float(result[3])
                 low =float(result[4])
-                return([sell, buy, close])
+                return([sell, buy, close, high, low])
             except Exception:
                 print(Exception)
                 predict.print_and_write('Try to get hilo again')
