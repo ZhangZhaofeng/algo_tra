@@ -15,7 +15,7 @@ import time
 
 class HILO:
     def __init__(self):
-        print("HILO initialized")
+        #print("HILO initialized")
         self.btc_charts = historical_fx.charts()
 
     def T_MAX(self, ndarray, timeperiod=5):
@@ -52,6 +52,6 @@ class HILO:
         high_price_ma = self.get_long_price(high_price)
         (buyprice, sellprice)=(high_price_ma[-2][0],low_price_ma[-2][0])
         a=(int(buyprice), int(sellprice))
-        print(a)
+        #print(a)
         return (int(buyprice), int(sellprice), int(close_price[-1]))
 
