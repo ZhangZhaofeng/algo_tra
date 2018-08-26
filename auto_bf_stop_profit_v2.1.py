@@ -428,6 +428,7 @@ class AutoTrading:
         trial_loss_cut = atr
         suggest_position = initposition
         switch_line = self.loss_cut_line
+        predict.print_and_write('hi: %f, lo: %f, atr: %f' % (hilo[1], hilo[0], atr))
 
 
         if initposition > 0.0:
