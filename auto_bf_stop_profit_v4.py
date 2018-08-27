@@ -324,7 +324,7 @@ class AutoTrading:
         predict.print_and_write('Check in price: %f, position: %f' % (checkin_price, position0))
 
         tdelta = self.bf_timejudge(starttime)
-        predict.print_and_write('hi: %f, lo: %f, atr: %f' % (hilo[0], hilo[1], atr))
+        predict.print_and_write('hi: %.0f, lo: %.0f, atr: %.0f, overshoot: %.0f' % (hilo[0], hilo[1], atr, self.ovrshoot))
         if atr > abs(hilo[0] - hilo[1]):
             atr = abs(hilo[0] - hilo[1])
             predict.print_and_write('atr is change to dis of hilo: %f'%(atr))
@@ -451,6 +451,7 @@ class AutoTrading:
         hilo = self.get_hilo()
         time.sleep(1)
         atr = self.get_ATR()
+        self.ovrshoot = atr * 0.25
         self.trade_in_hour(starttime, hilo, atr)
 
 
