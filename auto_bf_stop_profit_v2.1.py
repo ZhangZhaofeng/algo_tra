@@ -371,7 +371,7 @@ class AutoTrading:
                 self.acc_factor = trail_max_ratio
             predict.print_and_write('Max profit updated: %.0f, acc_factor: %.3f'%(self.max_profit, self.acc_factor))
 
-        if self.max_profit <= 0:
+        if profit < self.max_profit:
             trail_loss_cut = init_loss_cut_factor * atr
             if position > 0.0:
                 new_loss_cut_line = check_p - trail_loss_cut
