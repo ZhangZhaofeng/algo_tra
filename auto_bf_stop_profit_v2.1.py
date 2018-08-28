@@ -49,7 +49,7 @@ class AutoTrading:
 
     switch_in_hour = False # if true, will be waiting for inhour position change
     order_id = ''
-    init_trade_amount = 0.01
+    init_trade_amount = 0.1
 
     # for trail order
     max_profit = 0
@@ -155,7 +155,7 @@ class AutoTrading:
 
     def get_hilo(self):
         i = 0
-        while i < 30:
+        while i < 100:
             try:
                 hilos = technical_fx_turtle.HILO()
                 result = hilos.publish_current_hilo_price()
@@ -175,7 +175,7 @@ class AutoTrading:
 
     def get_ATR(self):
         i = 0
-        while i < 30:
+        while i < 100:
             try:
                 atrs = technical_fx_hilo2.HILO()
                 result = atrs.getATR()
@@ -341,8 +341,8 @@ class AutoTrading:
     def get_stop_acc_line(self, atr, checkins, cur_p):
         position = checkins[1]
         check_p = checkins[0]
-        init_loss_cut_factor = 2
-        trail_max_ratio = 0.25
+        init_loss_cut_factor = 2.2
+        trail_max_ratio = 0.26
         trail_ratio_acc = 0.02
         max_line = 0
 
@@ -371,25 +371,6 @@ class AutoTrading:
                 self.acc_factor = trail_max_ratio
             predict.print_and_write('Max profit updated: %.0f, acc_factor: %.3f'%(self.max_profit, self.acc_factor))
 
-        if profit < self.max_profit:
-            trail_loss_cut = init_loss_cut_factor * atr
-            if position > 0.0:
-                new_loss_cut_line = check_p - trail_loss_cut
-                if new_loss_cut_line > self.loss_cut_line:
-                    predict.print_and_write(
-                        'Profit is less than 0, loss cut line:2 ATR %.0f -> %.0f' % (
-                        self.loss_cut_line, new_loss_cut_line))
-                    self.loss_cut_line = new_loss_cut_line
-            elif position < 0.0:
-                new_loss_cut_line = check_p + trail_loss_cut
-                if new_loss_cut_line < self.loss_cut_line:
-                    predict.print_and_write(
-                        'Profit is less than 0, loss cut line:2 ATR %.0f -> %.0f' % (
-                        self.loss_cut_line, new_loss_cut_line))
-                    self.loss_cut_line = new_loss_cut_line
-
-        # set the max line
-        else:
             if position > 0.0:
                 max_line = check_p + self.max_profit
             elif position < 0.0:
@@ -410,10 +391,22 @@ class AutoTrading:
                         'loss cut line updated: %.0f -> %.0f' % (self.loss_cut_line, new_loss_cut_line))
                     self.loss_cut_line = new_loss_cut_line
 
-
-
-        # trail line can not switch to less than previous line
-
+        else:
+            trail_loss_cut = init_loss_cut_factor * atr
+            if position > 0.0:
+                new_loss_cut_line = check_p - trail_loss_cut
+                if new_loss_cut_line > self.loss_cut_line:
+                    predict.print_and_write(
+                        'Profit is less than 0, loss cut line:2.2 ATR %.0f -> %.0f' % (
+                        self.loss_cut_line, new_loss_cut_line))
+                    self.loss_cut_line = new_loss_cut_line
+            elif position < 0.0:
+                new_loss_cut_line = check_p + trail_loss_cut
+                if new_loss_cut_line < self.loss_cut_line:
+                    predict.print_and_write(
+                        'Profit is less than 0, loss cut line:2.2 ATR %.0f -> %.0f' % (
+                        self.loss_cut_line, new_loss_cut_line))
+                    self.loss_cut_line = new_loss_cut_line
 
     # detect order in hour
     # record the inital state of position
@@ -532,6 +525,7 @@ class AutoTrading:
         pre_profit = -trial_loss_cut
         atr = trial_loss_cut
         tdelta = self.bf_timejudge(starttime)
+        startt= tdelta
         predict.print_and_write('Use a trial order')
         #predict.print_and_write('Current position: %f, price: %f' % (checkins[1], checkins[0]))
         while tdelta < 3600:
@@ -552,8 +546,7 @@ class AutoTrading:
                     trial_loss_cut = 15000
 
 
-            tdelta2 = self.bf_timejudge(starttime)
-            dt = tdelta2 - tdelta
+            dt = tdelta- startt
 
             if profit < pre_profit:
                 # quit
@@ -573,7 +566,7 @@ class AutoTrading:
                 temp_pre_profit = profit - trial_loss_cut
                 if temp_pre_profit > pre_profit:
                     pre_profit = temp_pre_profit
-            print('T: %d, Profit: %5.0f, Max Profit: %5.0f, Losscut Profit: %5.0f' %(dt, profit, max_profit, pre_profit), end='\r')
+            print('T: %d, P: %5.0f, MP: %5.0f, L: %5.0f' %(dt, profit, max_profit, pre_profit), end='\r')
             time.sleep(0.8)
             tdelta = self.bf_timejudge(starttime)
         predict.print_and_write('Time is over, quit, final profit: %5.0f'%(profit))
