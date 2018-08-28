@@ -165,7 +165,9 @@ class AutoTrading:
                 close = float(result[2])  # the close price of last hour
                 high = float(result[3])
                 low =float(result[4])
-                return([sell, buy, close, high, low])
+                quits = float(result[5])
+                quitl = float(result[6])
+                return([sell, buy, close, high, low, quits, quitl])
             except Exception:
                 print(Exception)
                 predict.print_and_write('Try to get hilo again')
@@ -422,8 +424,18 @@ class AutoTrading:
         print_onec = True
         trial_loss_cut = atr
         suggest_position = initposition
+
         switch_line = self.loss_cut_line
-        predict.print_and_write('hi: %f, lo: %f, atr: %f' % (hilo[1], hilo[0], atr))
+        print(hilo[5],hilo[6])
+        if initposition > 0.0 and hilo[6] > self.loss_cut_line:
+            predict.print_and_write('quit line is higher than stop line, use quit line to quit')
+            switch_line = hilo[5]
+        elif initposition < 0.0 and hilo[5] < self.loss_cut_line:
+            predict.print_and_write('quit line is lower than stop line, use quit line to quit')
+            switch_line = hilo[6]
+
+
+        predict.print_and_write('hi: %.0f, lo: %.0f, atr: %.0f, quit: %.0f' % (hilo[1], hilo[0], atr, switch_line))
 
 
         if initposition > 0.0:
