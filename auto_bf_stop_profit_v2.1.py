@@ -54,7 +54,7 @@ class AutoTrading:
     # for trail order
     max_profit = 0
     loss_cut_line = -100
-    acc_factor = -0.03
+    acc_factor = -0.02
 
 
     def __init__(self):
@@ -132,7 +132,7 @@ class AutoTrading:
         return(tdelta)
 
     def get_curhour(self):
-        cur_hour = datetime.datetime.fromtimestamp(time.time() - time.time() % 3600 +2)
+        cur_hour = datetime.datetime.fromtimestamp(time.time() - time.time() % 3600 +10)
         return(cur_hour.timestamp())
 
     def judge_order(self, id):
@@ -301,7 +301,7 @@ class AutoTrading:
                 predict.print_and_write('Switch to long')
                 position_suggest = self.init_trade_amount
                 self.loss_cut_line = -100
-                self.acc_factor = -0.03
+                self.acc_factor = -0.02
                 self.max_profit = 0
             # buy self.init + checkins[1]
 
@@ -316,7 +316,7 @@ class AutoTrading:
                 predict.print_and_write('Switch to short')
                 position_suggest = -self.init_trade_amount
                 self.loss_cut_line = -100
-                self.acc_factor = -0.03
+                self.acc_factor = -0.02
                 self.max_profit = 0
 
         elif cur_price > hilo[0] and cur_price < hilo[1]:
@@ -331,7 +331,7 @@ class AutoTrading:
                 predict.print_and_write('Sell long back')
             position_suggest = 0
             self.loss_cut_line = -100
-            self.acc_factor = -0.03
+            self.acc_factor = -0.02
             self.max_profit = 0
 
         predict.print_and_write('Suggest position:%f'%(float(position_suggest)))
@@ -342,8 +342,8 @@ class AutoTrading:
         position = checkins[1]
         check_p = checkins[0]
         init_loss_cut_factor = 2
-        trail_max_ratio = 0.3
-        trail_ratio_acc = 0.03
+        trail_max_ratio = 0.25
+        trail_ratio_acc = 0.02
         max_line = 0
 
 
@@ -448,7 +448,7 @@ class AutoTrading:
                         predict.print_and_write('Switch in hour')
                         suggest_position = 0
                         self.loss_cut_line = -100
-                        self.acc_factor = -0.03
+                        self.acc_factor = -0.02
                         self.max_profit = 0
                         checkins = self.judge_position(suggest_position)
                         print_onec = False
@@ -479,7 +479,7 @@ class AutoTrading:
                         predict.print_and_write('Switch in hour')
                         suggest_position = 0
                         self.loss_cut_line = -100
-                        self.acc_factor = -0.03
+                        self.acc_factor = -0.02
                         self.max_profit = 0
                         checkins = self.judge_position(suggest_position)
                         print_onec = False
@@ -542,7 +542,7 @@ class AutoTrading:
                 profit = checkins[0] - cur_price
             if profit > max_profit:
                 max_profit = profit
-                if max_profit > atr * 0.5 and max_profit < atr:
+                if max_profit > atr * 0.5 and max_profit < atr and atr > 5000:
                     trial_loss_cut = atr * 0.5
                 elif max_profit >= atr and max_profit< atr * 2:
                     trial_loss_cut = atr
