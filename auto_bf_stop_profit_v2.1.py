@@ -428,11 +428,11 @@ class AutoTrading:
         switch_line = self.loss_cut_line
         print(hilo[5],hilo[6])
         if initposition > 0.0 and hilo[6] > self.loss_cut_line:
-            predict.print_and_write('quit line is higher than stop line, use quit line to quit')
-            switch_line = hilo[5]
-        elif initposition < 0.0 and hilo[5] < self.loss_cut_line:
-            predict.print_and_write('quit line is lower than stop line, use quit line to quit')
+            predict.print_and_write('quit line is higher than stop line, use quit %.0f to quit'%(hilo[6]))
             switch_line = hilo[6]
+        elif initposition < 0.0 and hilo[5] < self.loss_cut_line:
+            predict.print_and_write('quit line is lower than stop line, use quit %.0f to quit'%(hilo[5]))
+            switch_line = hilo[5]
 
 
         predict.print_and_write('hi: %.0f, lo: %.0f, atr: %.0f, quit: %.0f' % (hilo[1], hilo[0], atr, switch_line))
