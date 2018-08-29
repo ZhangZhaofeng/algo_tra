@@ -51,7 +51,7 @@ class HILO:
         low_price_ma = self.get_short_price(low_price)
         high_price_ma = self.get_long_price(high_price)
         low_price_ma_half = self.get_short_price(low_price, 19)
-        high_price_ma_half = self.get_short_price(high_price, 19)
+        high_price_ma_half = self.get_long_price(high_price, 19)
         (buyprice, sellprice)=(high_price_ma[-2][0],low_price_ma[-2][0])
         (quitshort, quitlong) = (high_price_ma_half[-2][0], low_price_ma_half[-2][0])
         #print(a)
