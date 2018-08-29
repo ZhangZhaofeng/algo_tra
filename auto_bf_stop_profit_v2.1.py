@@ -8,6 +8,7 @@ import sys
 import technical_fx_hilo2
 import technical_fx_turtle
 import math
+import configIO
 
 from email.mime.text import MIMEText
 from email.utils import formatdate
@@ -60,6 +61,8 @@ class AutoTrading:
     def __init__(self):
         print("Initializing API")
         self.bitflyer_api = pybitflyer.API(api_key=str(ks.bitflyer_api), api_secret=str(ks.bitflyer_secret))
+
+
 
     def trade_market(self, type, amount, wprice = 10000):
         self.maintance_time()
@@ -672,18 +675,43 @@ def sendamail(title ,str):
     msg['Date'] = formatdate()
     sender.send_email(address, msg.as_string())
 
+
+
 if __name__ == '__main__':
     argvs = sys.argv
     argc = len(argvs)
     autoTrading = AutoTrading()
     if argc >= 2:
-        autoTrading.switch_in_hour = bool(sys.argv[1])
+        cofile = sys.argv[1]
+    else:
+        cofile = 'order.ini'
+        #tempcf = dict()
+        #tempcf['stoploss'] = {'max_profit':autoTrading.max_profit,
+        #                   'loss_cut_line':autoTrading.loss_cut_line,
+        #                   'acc_factor':autoTrading.acc_factor}
+
+        #cf.save_config_order(tempcf)
+    cf = configIO.configIO(config_file=cofile)
+    parameters = cf.read_config_order()
+    autoTrading.max_profit = parameters['max_profit']
+    autoTrading.loss_cut_line = parameters['loss_cut_line']
+    autoTrading.acc_factor = parameters['acc_factor']
+    predict.print_and_write('config read')
+
+
 
     #tdelta = autoTrading.bf_timejudge('2018-05-21T14:35:44.713')
     try_times = 20
     while 1:
         autoTrading.judge_condition()
         autoTrading.get_collateral()
+        tempcf = dict()
+        tempcf['stoploss'] = {'max_profit':autoTrading.max_profit,
+                           'loss_cut_line':autoTrading.loss_cut_line,
+                           'acc_factor':autoTrading.acc_factor}
+        predict.print_and_write('config saved')
+        cf.save_config_order(tempcf)
+
 
     #tdelta = autoTrading.bf_timejudge('2018-05-21T14:35:44.713')
     # while try_times > 0:
