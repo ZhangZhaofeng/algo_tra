@@ -10,8 +10,8 @@ class configIO():
     def read_config_order(self):
         self.config.read(self.config_file)
         for key in self.config:
+            previous_order = dict()
             if key == 'order':
-                previous_order = dict()
                 #labels = ['exist', 'type', 'id', 'remain', 'trade_price', 'slide', 'tradeamount','position', 'holdflag']
                 previous_order['exist'] = bool(self.config.get(key, 'exist'))
                 previous_order['remain'] = float(self.config.get(key, 'remain'))
@@ -23,6 +23,11 @@ class configIO():
                 previous_order['position'] = float(self.config.get(key, 'position'))
                 previous_order['holdflag'] = bool(self.config.get(key, 'holdflag'))
                 previous_order['slide'] = float(self.config.get(key, 'slide'))
+                return (previous_order)
+            elif key == 'stoploss' :
+                previous_order['acc_factor'] = float(self.config.get(key, 'acc_factor'))
+                previous_order['loss_cut_line']= float(self.config.get(key, 'loss_cut_line'))
+                previous_order['max_profit'] = float(self.config.get(key, 'max_profit'))
                 return(previous_order)
         return({})
 
