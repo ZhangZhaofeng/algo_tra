@@ -7,28 +7,30 @@ class configIO():
         self.config = configparser.ConfigParser()
         self.config_file = config_file
 
-    def read_config_order(self):
+    def read_config_order(self , key):
         self.config.read(self.config_file)
-        for key in self.config:
-            previous_order = dict()
-            if key == 'order':
-                #labels = ['exist', 'type', 'id', 'remain', 'trade_price', 'slide', 'tradeamount','position', 'holdflag']
-                previous_order['exist'] = bool(self.config.get(key, 'exist'))
-                previous_order['remain'] = float(self.config.get(key, 'remain'))
-                previous_order['id'] = str(self.config.get(key, 'id'))
-                previous_order['type'] = str(self.config.get(key, 'type'))
-                previous_order['trade_price'] = float(self.config.get(key, 'trade_price'))
-                previous_order['slide'] = float(self.config.get(key, 'slide'))
-                previous_order['tradeamount'] = float(self.config.get(key, 'tradeamount'))
-                previous_order['position'] = float(self.config.get(key, 'position'))
-                previous_order['holdflag'] = bool(self.config.get(key, 'holdflag'))
-                previous_order['slide'] = float(self.config.get(key, 'slide'))
-                return (previous_order)
-            elif key == 'stoploss' :
-                previous_order['acc_factor'] = float(self.config.get(key, 'acc_factor'))
-                previous_order['loss_cut_line']= float(self.config.get(key, 'loss_cut_line'))
-                previous_order['max_profit'] = float(self.config.get(key, 'max_profit'))
-                return(previous_order)
+        previous_order = dict()
+        if key == 'order':
+            #labels = ['exist', 'type', 'id', 'remain', 'trade_price', 'slide', 'tradeamount','position', 'holdflag']
+            previous_order['exist'] = bool(self.config.get(key, 'exist'))
+            previous_order['remain'] = float(self.config.get(key, 'remain'))
+            previous_order['id'] = str(self.config.get(key, 'id'))
+            previous_order['type'] = str(self.config.get(key, 'type'))
+            previous_order['trade_price'] = float(self.config.get(key, 'trade_price'))
+            previous_order['slide'] = float(self.config.get(key, 'slide'))
+            previous_order['tradeamount'] = float(self.config.get(key, 'tradeamount'))
+            previous_order['position'] = float(self.config.get(key, 'position'))
+            previous_order['holdflag'] = bool(self.config.get(key, 'holdflag'))
+            previous_order['slide'] = float(self.config.get(key, 'slide'))
+            return (previous_order)
+        elif key == 'stoploss' :
+            previous_order['acc_factor'] = float(self.config.get(key, 'acc_factor'))
+            previous_order['loss_cut_line']= float(self.config.get(key, 'loss_cut_line'))
+            previous_order['max_profit'] = float(self.config.get(key, 'max_profit'))
+            return(previous_order)
+        elif key == 'panic' :
+            previous_order['init_panic_index'] = float(self.config.get(key, 'init_panic_index'))
+            return(previous_order)
         return({})
 
     def save_config_order(self, configs):
