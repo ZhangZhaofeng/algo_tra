@@ -569,6 +569,7 @@ class AutoTrading:
                 if not self.switch_in_hour:
                     # if not switch , detecting
                     switch_in_hoursell= self.detect_and_trade('sell', hilo[0], self.init_trade_amount_sell)
+                    time.sleep(0.8)
                     switch_in_hourbuy = self.detect_and_trade('buy', hilo[1], self.init_trade_amount_buy)
                     self.switch_in_hour = switch_in_hourbuy or switch_in_hoursell
                 elif switch_in_hourbuy:
