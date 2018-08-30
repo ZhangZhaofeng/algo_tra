@@ -73,6 +73,9 @@ class AutoTrading:
 
     def decide_trade_amount(self, curp ,losscut):
         if self.auto_decide:
+            while curp == 0.0:
+                predict.print_and_write('curp == 0 try again')
+                curp = self.get_current_price(30)
             max_trade = round(self.useable_margin * self.level / curp, 2)
             safe_trade = round(self.useable_margin * self.max_loss / losscut, 2)
             predict.print_and_write('Amount control, Max trade: %.2f, safe trade: %.2f' % (max_trade, safe_trade))
@@ -80,6 +83,7 @@ class AutoTrading:
                 predict.print_and_write('Use smaller')
                 safe_trade = max_trade
             self.init_trade_amount = safe_trade
+
 
 
 
@@ -717,7 +721,7 @@ if __name__ == '__main__':
 
         #cf.save_config_order(tempcf)
     cf = configIO.configIO(config_file=cofile)
-    parameters = cf.read_config_order()
+    parameters = cf.read_config_order('stoploss')
     autoTrading.max_profit = parameters['max_profit']
     autoTrading.loss_cut_line = parameters['loss_cut_line']
     autoTrading.acc_factor = parameters['acc_factor']
