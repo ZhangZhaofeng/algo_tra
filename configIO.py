@@ -35,9 +35,11 @@ class configIO():
 
     def save_config_order(self, configs):
         if isinstance(configs, dict):
-            self.config.read_dict(configs)
-            with open (self.config_file, 'w') as inifile:
-                self.config.write(inifile)
+            #self.config.read_dict(configs)
+            #with open (self.config_file, 'w') as inifile:
+            for sections in configs:
+                for options in configs[sections]:
+                    self.config.set(sections, options, str(configs[sections][options]))
             return(0)
         return(1)
 
