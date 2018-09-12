@@ -402,7 +402,7 @@ class AutoTrading:
         position = checkins[1]
         check_p = checkins[0]
         init_loss_cut_factor = 2.2
-        trail_max_ratio = 0.26
+        trail_max_ratio = 0.24
         trail_ratio_acc = 0.02
         max_line = 0
 
@@ -484,7 +484,7 @@ class AutoTrading:
         suggest_position = initposition
 
         switch_line = self.loss_cut_line
-        print(hilo[5],hilo[6])
+        print('quit_short ', hilo[5], 'quit_long ', hilo[6])
         if initposition > 0.0 and hilo[6] > self.loss_cut_line:
             predict.print_and_write('quit line is higher than stop line, use quit %.0f to quit'%(hilo[6]))
             switch_line = hilo[6]
@@ -493,7 +493,7 @@ class AutoTrading:
             switch_line = hilo[5]
 
 
-        predict.print_and_write('hi: %.0f, lo: %.0f, atr: %.0f, quit: %.0f' % (hilo[1], hilo[0], atr, switch_line))
+        predict.print_and_write('hi: %.0f, lo: %.0f, close: %.0f, atr: %.0f, quit: %.0f' % (hilo[1], hilo[0], hilo[2], atr, switch_line))
 
 
         if initposition > 0.0:
@@ -607,7 +607,7 @@ class AutoTrading:
                 profit = checkins[0] - cur_price
             if profit > max_profit:
                 max_profit = profit
-                if max_profit > atr * 0.5 and max_profit < atr and atr > 5000:
+                if max_profit > atr * 0.5 and max_profit < atr:
                     trial_loss_cut = atr * 0.5
                 elif max_profit >= atr and max_profit< atr * 2:
                     trial_loss_cut = atr
