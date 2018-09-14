@@ -624,10 +624,14 @@ class AutoTrading:
                 if checkins[1] > 0.0:
                     trade_mount = '%.2f' % abs(checkins[1])
                     order = self.trade_market('sell', trade_mount, int(cur_price))
+                    suggest_position = 0.0
+                    checks = self.judge_position(suggest_position)
                     predict.print_and_write(order)
                 elif checkins[1] < 0.0:
                     trade_mount = '%.2f' % abs(checkins[1])
                     order = self.trade_market('buy', trade_mount, int(cur_price))
+                    suggest_position = 0.0
+                    checks = self.judge_position(suggest_position)
                     predict.print_and_write(order)
 
                 predict.print_and_write('Quit position ,profit: %.2f, time: %d'%(profit, dt))
