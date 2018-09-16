@@ -40,6 +40,8 @@ class configIO():
             for sections in configs:
                 for options in configs[sections]:
                     self.config.set(sections, options, str(configs[sections][options]))
+            with open(self.config_file, 'w') as configfile:
+                self.config.write(configfile)
             return(0)
         return(1)
 
