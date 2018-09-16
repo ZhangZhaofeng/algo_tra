@@ -659,7 +659,7 @@ class AutoTrading:
             predict.print_and_write(
                 'Position is unusual, suggest: %.3f, real: %.3f , check again' % (suggest_position, checkins[1]))
             time.sleep(5)  # in 5s , we should obvious the position change.
-            if (t % 100) == 0 and t > 99 :
+            if (t % 60) == 0 and t > 59 :
                 predict.print_and_write('Recorrect position')
                 if suggest_position - checkins[1] > 0:
                     self.trade_market('buy', '%.2f'%(suggest_position - checkins[1]))
@@ -667,7 +667,6 @@ class AutoTrading:
                     self.trade_market('sell', '%.2f'%(checkins[1] -suggest_position ))
         predict.print_and_write('Something is wrong, trade but not succeed')
         return(checkins)
-
 
     def judge_condition(self): # judge position at hour start.
         time.sleep(1)
@@ -767,11 +766,12 @@ if __name__ == '__main__':
 
     #tdelta = autoTrading.bf_timejudge('2018-05-21T14:35:44.713')
     try_times = 20
+    if autoTrading.panic:
+        p2 = cf.read_config_order('panic')
+        autoTrading.init_panic_index = p2['init_panic_index']
+        print('Panic read')
+
     while 1:
-        if autoTrading.panic:
-            p2 = cf.read_config_order('panic')
-            autoTrading.init_panic_index = p2['init_panic_index']
-            print('Panic read')
 
         autoTrading.get_collateral()
         autoTrading.judge_condition()
@@ -779,6 +779,11 @@ if __name__ == '__main__':
         tempcf['stoploss'] = {'max_profit':autoTrading.max_profit,
                            'loss_cut_line':autoTrading.loss_cut_line,
                            'acc_factor':autoTrading.acc_factor}
+        if autoTrading.panic:
+            p2 = cf.read_config_order('panic')
+            autoTrading.init_panic_index = p2['init_panic_index']
+            print('Panic read')
+            tempcf['panic'] = {'init_panic_index':autoTrading.init_panic_index}
         predict.print_and_write('config saved')
         cf.save_config_order(tempcf)
 
