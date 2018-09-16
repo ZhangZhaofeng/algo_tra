@@ -634,7 +634,8 @@ class AutoTrading:
                     checks = self.judge_position(suggest_position)
                     predict.print_and_write(order)
 
-                predict.print_and_write('Quit position ,profit: %.2f, time: %d'%(profit, dt))
+                predict.print_and_write('Quit position ,profit: %.2f, time: %d, sleep: %d'%(profit, dt, tdelta))
+                time.sleep(tdelta+10)
                 return
 
             elif profit >= pre_profit and profit > 0:
