@@ -638,7 +638,7 @@ class AutoTrading:
                     predict.print_and_write(order)
 
                 predict.print_and_write('Quit position ,profit: %.2f, time: %d, sleep: %d'%(profit, dt, 3600-tdelta+10))
-                time.sleep(3600-tdelta+10)
+                time.sleep(3600-tdelta)
                 return
 
             elif profit >= pre_profit and profit > 0:
