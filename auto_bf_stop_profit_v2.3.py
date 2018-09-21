@@ -307,7 +307,7 @@ class AutoTrading:
         return([checkin_price, position0])
 
     def get_current_price(self, number):
-        d = 200
+        d = 350
         while d > 0:
             try:
                 trade_history = self.bitflyer_api.executions(product_code = 'FX_BTC_JPY', count = number)
@@ -319,10 +319,13 @@ class AutoTrading:
                 for i in trade_history:
                     cur_price += i['size']/total_size * i['price']
 
+                if cur_price == 0.0:
+                    time.sleep(0.1)
+                    continue
                 return(math.floor(cur_price))
             except Exception:
                 print('Get price error ,try again')
-                time.sleep(10)
+                time.sleep(5)
                 d -= 1
                 continue
         print('Try too many times, failed')
