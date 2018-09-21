@@ -638,6 +638,7 @@ class AutoTrading:
                     predict.print_and_write(order)
 
                 predict.print_and_write('Quit position ,profit: %.2f, time: %d, sleep: %d'%(profit, dt, 3600-tdelta+10))
+                tdelta = self.bf_timejudge(starttime)
                 time.sleep(3600-tdelta)
                 return
 
