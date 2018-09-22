@@ -6,7 +6,7 @@ import predict
 import configIO
 import sys
 import technical_fx_hilo2
-import technical_fx_turtle_close
+import technical_fx_turtle
 import math
 import configIO
 
@@ -214,7 +214,7 @@ class AutoTrading:
         i = 0
         while i < 100:
             try:
-                hilos = technical_fx_turtle_close.HILO()
+                hilos = technical_fx_turtle.HILO()
                 result = hilos.publish_current_hilo_price()
         # result = prediction.publish_current_limit_price(periods="1H")
                 sell = float(result[1])
