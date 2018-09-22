@@ -28,19 +28,19 @@ class HILO:
         # print(x)
         return x.T
 
-    def get_HIGH_MA(self, HIGH, num=39):  # price=1*N (N>61)
+    def get_HIGH_MA(self, HIGH, num=60):  # price=1*N (N>61)
         ma_high=self.T_MAX(HIGH,num)
         return ma_high
 
-    def get_LOW_MA(self, LOW, num=39):  # price=1*N (N>61)
+    def get_LOW_MA(self, LOW, num=60):  # price=1*N (N>61)
         ma_low=self.T_MIN(LOW,num)
         return ma_low
 
-    def get_long_price(self, HIGH, num=39):
+    def get_long_price(self, HIGH, num=60):
         ma_high=self.get_HIGH_MA(HIGH, num)
         return ma_high
 
-    def get_short_price(self, LOW, num=39):
+    def get_short_price(self, LOW, num=60):
         ma_low = self.get_LOW_MA(LOW, num)
         return ma_low
 
@@ -50,8 +50,8 @@ class HILO:
 
         low_price_ma = self.get_short_price(low_price)
         high_price_ma = self.get_long_price(high_price)
-        low_price_ma_half = self.get_short_price(low_price, 19)
-        high_price_ma_half = self.get_long_price(high_price, 19)
+        low_price_ma_half = self.get_short_price(low_price, 30)
+        high_price_ma_half = self.get_long_price(high_price, 30)
         (buyprice, sellprice)=(high_price_ma[-2][0],low_price_ma[-2][0])
         (quitshort, quitlong) = (high_price_ma_half[-2][0], low_price_ma_half[-2][0])
         #print(a)
