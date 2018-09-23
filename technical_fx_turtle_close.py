@@ -50,12 +50,16 @@ class HILO:
         midhigh, midlow = self.get_mid_hilo(open_price, high_price, low_price, close_price)
         low_price_ma = self.get_short_price(midlow)
         high_price_ma = self.get_long_price(midhigh)
-        low_price_ma_half = self.get_short_price(midlow, 30)
-        high_price_ma_half = self.get_long_price(midhigh, 30)
+        low_price_ma_half = self.get_short_price(low_price, 30)
+        high_price_ma_half = self.get_long_price(high_price, 30)
+        low_price_real = self.get_short_price(low_price, 60)
+        high_price_real = self.get_long_price(high_price, 60)
+
         (buyprice, sellprice)=(high_price_ma[-2][0],low_price_ma[-2][0])
         (quitshort, quitlong) = (high_price_ma_half[-2][0], low_price_ma_half[-2][0])
+        (inhoursell, inhourbuy) = (low_price_real[-2][0],high_price_real[-2][0])
         #print(a)
-        return (int(buyprice), int(sellprice), int(close_price[-1]), int(high_price[-1]), int(low_price[-1]), int(quitshort), int(quitlong))
+        return (int(buyprice), int(sellprice), int(close_price[-1]), int(high_price[-1]), int(low_price[-1]), int(quitshort), int(quitlong), int(inhourbuy),int(inhoursell))
 
     def get_mid_hilo(self, open, high, low, close):
         mid_factor = 0.5
