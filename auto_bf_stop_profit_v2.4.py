@@ -224,7 +224,9 @@ class AutoTrading:
                 low =float(result[4])
                 quits = float(result[5])
                 quitl = float(result[6])
-                return([sell, buy, close, high, low, quits, quitl])
+                inhourbuy = float(result[7])
+                inhoursell = float(result[8])
+                return([sell, buy, close, high, low, quits, quitl, inhourbuy, inhoursell])
             except Exception:
                 print(Exception)
                 predict.print_and_write('Try to get hilo again')
@@ -519,7 +521,7 @@ class AutoTrading:
                         checkins = self.judge_position(suggest_position)
                         print_onec = False
                     if (not switch2other_side) and enable_other_side:
-                        switch2other_side = self.detect_and_trade(direction, hilo[0], self.init_trade_amount_sell)
+                        switch2other_side = self.detect_and_trade(direction, hilo[8], self.init_trade_amount_sell)
                     elif switch2other_side and enable_other_side:
                         suggest_position = -self.init_trade_amount_sell
                         checkins = self.judge_position(suggest_position)
@@ -550,7 +552,7 @@ class AutoTrading:
                         checkins = self.judge_position(suggest_position)
                         print_onec = False
                     if not switch2other_side and enable_other_side:
-                        switch2other_side = self.detect_and_trade(direction, hilo[1], self.init_trade_amount_buy)
+                        switch2other_side = self.detect_and_trade(direction, hilo[7], self.init_trade_amount_buy)
                     elif switch2other_side and enable_other_side:
                         predict.print_and_write('switch to other side')
                         suggest_position = self.init_trade_amount_buy
@@ -571,9 +573,9 @@ class AutoTrading:
             while tdelta < 3600:
                 if not self.switch_in_hour:
                     # if not switch , detecting
-                    switch_in_hoursell= self.detect_and_trade('sell', hilo[0], self.init_trade_amount_sell)
+                    switch_in_hoursell= self.detect_and_trade('sell', hilo[8], self.init_trade_amount_sell)
                     time.sleep(0.8)
-                    switch_in_hourbuy = self.detect_and_trade('buy', hilo[1], self.init_trade_amount_buy)
+                    switch_in_hourbuy = self.detect_and_trade('buy', hilo[7], self.init_trade_amount_buy)
                     self.switch_in_hour = switch_in_hourbuy or switch_in_hoursell
                 elif switch_in_hourbuy:
                     predict.print_and_write('Bulid in hour long')
