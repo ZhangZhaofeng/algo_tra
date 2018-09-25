@@ -480,13 +480,13 @@ class AutoTrading:
     # following profit ever 1 min, if profit is starting to reduce , quite (need a trial order)
     def trade_in_hour(self, initposition, starttime, hilo, atr):
         amount_stop = abs(float('%.2f' % (initposition)))
-        tdelta = self.bf_timejudge(starttime)
+        #tdelta = self.bf_timejudge(starttime)
         self.switch_in_hour = False
-        enable_other_side = True
-        switch2other_side = False
+        enable_other_side = True # if enable position upsetdown in an hour
+        #switch2other_side = False # if position changed in an hour
         print_onec = True
         trial_loss_cut = atr
-        suggest_position = initposition
+        #suggest_position = initposition
 
         switch_line = self.loss_cut_line
         print('quit_short ', hilo[5], 'quit_long ', hilo[6])
@@ -520,13 +520,16 @@ class AutoTrading:
                         self.max_profit = 0
                         checkins = self.judge_position(suggest_position)
                         print_onec = False
-                    if (not switch2other_side) and enable_other_side:
-                        switch2other_side = self.detect_and_trade(direction, hilo[8], self.init_trade_amount_sell)
-                    elif switch2other_side and enable_other_side:
-                        suggest_position = -self.init_trade_amount_sell
-                        checkins = self.judge_position(suggest_position)
-                        predict.print_and_write('switch to other side')
-                        self.trial_order(checkins, trial_loss_cut, starttime)
+                    if enable_other_side:
+                        self.inhour_with_zero_position(starttime, hilo, trial_loss_cut)
+                        break
+                    # if (not switch2other_side) and enable_other_side:
+                    #     switch2other_side = self.detect_and_trade(direction, hilo[8], self.init_trade_amount_sell)
+                    # elif switch2other_side and enable_other_side:
+                    #     suggest_position = -self.init_trade_amount_sell
+                    #     checkins = self.judge_position(suggest_position)
+                    #     predict.print_and_write('switch to other side')
+                    #     self.switch_in_hour = self.trial_order(checkins, trial_loss_cut, starttime)
                     # trade another direction:
                 time.sleep(0.8)
                 tdelta = self.bf_timejudge(starttime)
@@ -551,48 +554,87 @@ class AutoTrading:
                         self.max_profit = 0
                         checkins = self.judge_position(suggest_position)
                         print_onec = False
-                    if not switch2other_side and enable_other_side:
-                        switch2other_side = self.detect_and_trade(direction, hilo[7], self.init_trade_amount_buy)
-                    elif switch2other_side and enable_other_side:
-                        predict.print_and_write('switch to other side')
-                        suggest_position = self.init_trade_amount_buy
-                        checkins = self.judge_position(suggest_position)
-                        self.trial_order(checkins, trial_loss_cut, starttime)
-
+                    if enable_other_side:
+                        self.inhour_with_zero_position(starttime, hilo, trial_loss_cut)
+                        break
+                    # if not switch2other_side and enable_other_side:
+                    #     switch2other_side = self.detect_and_trade(direction, hilo[7], self.init_trade_amount_buy)
+                    # elif switch2other_side and enable_other_side:
+                    #     predict.print_and_write('switch to other side')
+                    #     suggest_position = self.init_trade_amount_buy
+                    #     checkins = self.judge_position(suggest_position)
+                    #     self.switch_in_hour = self.trial_order(checkins, trial_loss_cut, starttime)
                     # trade another direction:
                 time.sleep(0.8)
                 tdelta = self.bf_timejudge(starttime)
 
 
-        elif initposition == 0.0 and enable_other_side:
+        elif initposition == 0.0: #and enable_other_side:
+            self.inhour_with_zero_position(starttime, hilo, trial_loss_cut)
             # if we have a positive position, detect a change to quit and switch
-            tdelta = self.bf_timejudge(starttime)
-            predict.print_and_write('Detecting a chance to get in')
-            switch_in_hourbuy = False
-            switch_in_hoursell = False
-            while tdelta < 3600:
-                if not self.switch_in_hour:
-                    # if not switch , detecting
-                    switch_in_hoursell= self.detect_and_trade('sell', hilo[8], self.init_trade_amount_sell)
-                    time.sleep(0.8)
-                    switch_in_hourbuy = self.detect_and_trade('buy', hilo[7], self.init_trade_amount_buy)
-                    self.switch_in_hour = switch_in_hourbuy or switch_in_hoursell
-                elif switch_in_hourbuy:
-                    predict.print_and_write('Bulid in hour long')
-                    suggest_position = float(self.init_trade_amount_buy)
-                    checkins = self.judge_position(suggest_position)
-                    print_onec = False
-                    self.trial_order(checkins, trial_loss_cut, starttime)
-                    switch_in_hourbuy = False
-                elif switch_in_hoursell:
-                    predict.print_and_write('Bulid in hour short')
-                    suggest_position = -float(self.init_trade_amount_sell)
-                    checkins = self.judge_position(suggest_position)
-                    print_onec = False
-                    self.trial_order(checkins, trial_loss_cut, starttime)
-                    switch_in_hourbuy = False
+            # tdelta = self.bf_timejudge(starttime)
+            # predict.print_and_write('Detecting a chance to get in')
+            # switch_in_hourbuy = False
+            # switch_in_hoursell = False
+            # while tdelta < 3600:
+            #     if not self.switch_in_hour:
+            #         # if not switch , detecting
+            #         switch_in_hoursell= self.detect_and_trade('sell', hilo[8], self.init_trade_amount_sell)
+            #         time.sleep(0.8)
+            #         switch_in_hourbuy = self.detect_and_trade('buy', hilo[7], self.init_trade_amount_buy)
+            #         self.switch_in_hour = switch_in_hourbuy or switch_in_hoursell
+            #     elif switch_in_hourbuy:
+            #         predict.print_and_write('Bulid in hour long')
+            #         suggest_position = float(self.init_trade_amount_buy)
+            #         checkins = self.judge_position(suggest_position)
+            #         print_onec = False
+            #         self.switch_in_hour = self.trial_order(checkins, trial_loss_cut, starttime)
+            #         switch_in_hourbuy = False
+            #         suggest_position = 0
+            #     elif switch_in_hoursell:
+            #         predict.print_and_write('Bulid in hour short')
+            #         suggest_position = -float(self.init_trade_amount_sell)
+            #         checkins = self.judge_position(suggest_position)
+            #         print_onec = False
+            #         self.switch_in_hour = self.trial_order(checkins, trial_loss_cut, starttime)
+            #         switch_in_hoursell = False
+            #         suggest_position = 0
+            #     time.sleep(0.8)
+            #     tdelta = self.bf_timejudge(starttime)
+
+    def inhour_with_zero_position(self, starttime, hilo, trial_loss_cut):
+        tdelta = self.bf_timejudge(starttime)
+        predict.print_and_write('Position is 0, detecting a chance to get in')
+        switch_in_hourbuy = False
+        switch_in_hoursell = False
+        self.switch_in_hour = False
+        while tdelta < 3600:
+            if not self.switch_in_hour:
+                # if not switch , detecting
+                switch_in_hoursell = self.detect_and_trade('sell', hilo[8], self.init_trade_amount_sell)
                 time.sleep(0.8)
-                tdelta = self.bf_timejudge(starttime)
+                switch_in_hourbuy = self.detect_and_trade('buy', hilo[7], self.init_trade_amount_buy)
+                self.switch_in_hour = switch_in_hourbuy or switch_in_hoursell
+            elif switch_in_hourbuy:
+                predict.print_and_write('Bulid in hour long')
+                suggest_position = float(self.init_trade_amount_buy)
+                checkins = self.judge_position(suggest_position)
+                print_onec = False
+                self.switch_in_hour = self.trial_order(checkins, trial_loss_cut, starttime)
+                switch_in_hourbuy = False
+                switch_in_hoursell = False
+                suggest_position = 0
+            elif switch_in_hoursell:
+                predict.print_and_write('Bulid in hour short')
+                suggest_position = -float(self.init_trade_amount_sell)
+                checkins = self.judge_position(suggest_position)
+                print_onec = False
+                self.switch_in_hour = self.trial_order(checkins, trial_loss_cut, starttime)
+                switch_in_hourbuy = False
+                switch_in_hoursell = False
+                suggest_position = 0
+            time.sleep(0.8)
+            tdelta = self.bf_timejudge(starttime)
 
     def trial_order(self, checkins, trial_loss_cut, starttime):
         # Trial order keep loss less than trial_loss_cut
@@ -640,13 +682,15 @@ class AutoTrading:
                     checks = self.judge_position(suggest_position)
                     predict.print_and_write(order)
 
-                predict.print_and_write('Quit position ,profit: %.2f, time: %d, sleep: %d'%(profit, dt, 3600-tdelta+10))
+                predict.print_and_write('Quit position ,profit: %.2f, time: %d'%(profit, dt))
                 tdelta = self.bf_timejudge(starttime)
                 if 3600-tdelta < sleep_time:
+                    predict.print_and_write('Sleep %d' % (3600-tdelta))
                     time.sleep(3600-tdelta)
                 else:
+                    predict.print_and_write('Sleep %d' % (sleep_time))
                     time.sleep(sleep_time)
-                return
+                return False
 
             elif profit >= pre_profit and profit > 0:
                 temp_pre_profit = profit - trial_loss_cut
@@ -656,6 +700,7 @@ class AutoTrading:
             time.sleep(0.8)
             tdelta = self.bf_timejudge(starttime)
         predict.print_and_write('Time is over, quit, final profit: %5.0f'%(profit))
+        return True
 
 
     # judge if it is order succeed
