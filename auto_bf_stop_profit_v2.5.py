@@ -614,9 +614,11 @@ class AutoTrading:
         while tdelta < 3600:
             if not self.switch_in_hour:
                 # if not switch , detecting
-                switch_in_hoursell = self.detect_and_trade('sell', hilo[8], self.init_trade_amount_sell)
+                switch_in_hoursell = self.detect_and_trade('sell', int(hilo[8] + trial_loss_cut * 0.3),
+                                                           self.init_trade_amount_sell)
                 time.sleep(0.8)
-                switch_in_hourbuy = self.detect_and_trade('buy', hilo[7], self.init_trade_amount_buy)
+                switch_in_hourbuy = self.detect_and_trade('buy', int(hilo[7] - trial_loss_cut * 0.3),
+                                                          self.init_trade_amount_buy)
                 self.switch_in_hour = switch_in_hourbuy or switch_in_hoursell
             elif switch_in_hourbuy:
                 predict.print_and_write('Bulid in hour long')
