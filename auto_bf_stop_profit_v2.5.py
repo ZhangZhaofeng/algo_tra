@@ -691,7 +691,10 @@ class AutoTrading:
                 tdelta = self.bf_timejudge(starttime)
                 if 3600-tdelta < sleep_time:
                     predict.print_and_write('Sleep %d' % (3600-tdelta))
-                    time.sleep(3600-tdelta)
+                    if 3600-tdelta < 0:
+                        time.sleep(0)
+                    else:
+                        time.sleep(3600-tdelta)
                 else:
                     predict.print_and_write('Sleep %d' % (sleep_time))
                     time.sleep(sleep_time)
