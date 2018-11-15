@@ -340,13 +340,13 @@ class AutoTrading:
         price = self.get_current_price(30)
         print('Price: %5.0f, Line: %5.0f' % (price, line), end='\r')
         if direction == 'buy':
-            if price > line and price != 0 :
+            if price > line and price > 10000 :
                 predict.print_and_write(price)
                 order = self.trade_market('buy', amount, int(price))
                 predict.print_and_write(order)
                 return(True)
         elif direction == 'sell':
-            if price < line and price != 0 :
+            if price < line and price > 10000 :
                 predict.print_and_write(price)
                 order = self.trade_market('sell', amount, int(price))
                 predict.print_and_write(order)
@@ -409,7 +409,7 @@ class AutoTrading:
     def get_stop_acc_line(self, atr, checkins, cur_p):
         position = checkins[1]
         check_p = checkins[0]
-        init_loss_cut_factor = 2.2
+        init_loss_cut_factor = 2.5
         trail_max_ratio = 0.24
         trail_ratio_acc = 0.02
         max_line = 0
