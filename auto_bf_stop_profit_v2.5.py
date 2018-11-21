@@ -745,9 +745,9 @@ class AutoTrading:
         hilo = self.get_hilo()
         time.sleep(3)
         atr = round(float(self.get_ATR()),0)
-        if atr < least_atr:
-            atr = least_atr
-            predict.print_and_write('ATR is smaller than least, %.0f -> %.0f'%(atr, least_atr))
+        if atr < self.least_atr:
+            atr = self.least_atr
+            predict.print_and_write('ATR is smaller than least, %.0f -> %.0f'%(atr, self.least_atr))
         self.decide_trade_amount(cur_price, atr * 2.2)
 
 
