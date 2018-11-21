@@ -62,10 +62,10 @@ class AutoTrading:
 
     # position amount control
     total_margin = 50000
-    least_collateral = 15000
+    least_collateral = 5000
     useable_margin = 35000
     level = 3
-    max_loss = 0.03
+    max_loss = 0.022
 
     # panic index
     init_panic_index = 35
@@ -340,13 +340,13 @@ class AutoTrading:
         price = self.get_current_price(30)
         print('Price: %5.0f, Line: %5.0f' % (price, line), end='\r')
         if direction == 'buy':
-            if price > line and price > 10000 :
+            if price > line and price > 10001 :
                 predict.print_and_write(price)
                 order = self.trade_market('buy', amount, int(price))
                 predict.print_and_write(order)
                 return(True)
         elif direction == 'sell':
-            if price < line and price > 10000 :
+            if price < line and price > 10001 :
                 predict.print_and_write(price)
                 order = self.trade_market('sell', amount, int(price))
                 predict.print_and_write(order)
