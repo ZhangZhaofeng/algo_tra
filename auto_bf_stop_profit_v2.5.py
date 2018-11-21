@@ -61,15 +61,16 @@ class AutoTrading:
     acc_factor = -0.02
 
     # position amount control
-    total_margin = 50000
+    total_margin = 105000
     least_collateral = 5000
-    useable_margin = 35000
+    useable_margin = 100000
     level = 3
     max_loss = 0.022
 
     # panic index
     init_panic_index = 35
     panic = True
+    least_atr = 2500.0
 
 
     def __init__(self):
@@ -744,6 +745,9 @@ class AutoTrading:
         hilo = self.get_hilo()
         time.sleep(3)
         atr = round(float(self.get_ATR()),0)
+        if atr < least_atr:
+            atr = least_atr
+            predict.print_and_write('ATR is smaller than least, %.0f -> %.0f'%(atr, least_atr))
         self.decide_trade_amount(cur_price, atr * 2.2)
 
 
